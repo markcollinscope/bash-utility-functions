@@ -2,11 +2,31 @@
 
 # THIS STUFF SEEMS TO WORK!
 
+nb:() { :; }
+
+nb: Test inline keyword and also fn.return as inlined code.
+
+inline()
+{
+	eval "$@";
+}
 
 fn.return()
 {
-	echo "eval return $1";
+	echo "inline return $1";
 }
+
+testreturn=false;
+
+test $testreturn = true && fn() {
+	$(fn.return 76);
+} && fn 
+
+rval=$?
+
+test $testreturn = true && echo "test return: $rval"
+
+nb: Finished testing inline and fn.return now.
 
 fn.echo()
 {
@@ -152,7 +172,7 @@ uts.arr()
 	return;
 }
 
-TEST HERE!
+nb: TEST HERE!
 
 _map.init()
 {
