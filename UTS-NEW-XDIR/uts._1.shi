@@ -2,7 +2,7 @@
 
 # clone candidates.
 # null errecho (fnecho ...) errifnull callFnIfExists exiterr -k exitok fnname no ne getarg isNum
-# tmpFile evalerr isTerminalOutput setcol append (?) io.no io.ne io.none win.clear win.curpos
+# tmpFile _sys.evalerr isTerminalOutput setcol append (?) io.no io.ne io.none win.clear win.curpos
 
 # LEVEL 0 FNS
 # purely for uts debugging.
@@ -29,8 +29,8 @@ if $__UTS_ECHO_INTERCEPT; then
 
 fi
 
+_sys.eval()	  { eval "$@"; }
 _sys.fnname() { local level=${1:-1};  _io.echo ${FUNCNAME[$level]}; }
-
 _io.echo()	  { echo $*; }
 _io.err()	  { echo $* >&2; }
 _sys.kill()	  { kill 0; }
@@ -45,7 +45,7 @@ _sys.abort()
 	_sys.kill
 }
 
-_fn.return()	  { local retval=$1; shift; _io.echo "eval _io.echo $* && return $retval"; }
+_fn.return()	  { local retval=$1; shift; _io.echo "_sys.eval _io.echo $* && return $retval"; }
 
 
 _io.no()	  { "$@" >/dev/null; }
@@ -54,9 +54,9 @@ _io.none()	  { "$@" >/dev/null 2>/dev/null; }
 
 
 _sys.null()	  { test -z "$@"; }
-_sys.inline()	  { eval "$@"; }
+_sys.inline()	  { _sys.eval "$@"; }
 
-_ass.notnull() { test -z "$@" && _ass.notnull.err "value(s) cannot be null"; }
+_ass.notnull() { test -z "$@" && _ass.err "value(s) cannot be null"; }
 
 _val.const()
 {
@@ -72,11 +72,11 @@ _val.const()
 	_sys.inline $tpl;
 }
 
-_val.const ErrStackSz 5;
+_val.const _ass.stacksz 5;
 
 _sys.stack()  
 {
-	local ss=$(_io.errStackSz);
+	local ss=$(_ass.stacksz);
 	local n=${1:-$ss}
 
 	local res=""
@@ -86,9 +86,9 @@ _sys.stack()
 	$(_fn.return 0 $res);
 }
 
-_ass.notnull.err() 
+_ass.err() 
 { 
-	local ssz=$(_io.errStackSz);
+	local ssz=$(_ass.stacksz);
 
 	_sys.abort "
 		Assertion error [$@].
@@ -156,10 +156,9 @@ _regexp.match()
 	! test "$value" = "$sedvalue";
 }
 
-_regexp.haswhite()
+false && _regexp.haswhite()
 {
 	local input=$1
-
 }
 
 _ass.nowhite()
@@ -341,28 +340,26 @@ _fn.clone()
         $clonebody
     ";
 
-    eval $tpl
+    _sys.eval $tpl
 }
 
-# null arg, ws arg, abort msgs, ...
+## null arg, ws arg, abort msgs, ...
+##
+##
 #
+#nb:() { :; }
 #
-
-exit;
-
-nb:() { :; }
-
-nb: below makes a difference. no err. with set -u, there is an error. 
-nb: but with below also fn.error.
-
-set +u
-
-egfn()
-{
-    local a1=$(_val $1);
-    local a2=$(_val ${2-'default'});
-
-    _io.echo $a1 $a2
-}
-
-egfn 'ws ws' hithere;
+#nb: below makes a difference. no err. with set -u, there is an error. 
+#nb: but with below also fn.error.
+#
+#set +u
+#
+#egfn()
+#{
+#    local a1=$(_val $1);
+#    local a2=$(_val ${2-'default'});
+#
+#    _io.echo $a1 $a2
+#}
+#
+#egfn 'ws ws' hithere;

@@ -1,1 +1,64 @@
 # /bin/bash
+
+. uts._1.shi
+
+nb: REDO
+readonly TRUE=0;
+readonly FALSE=1;
+io.echo()	  { echo $*; }
+mod.start()	  { return 0; }
+const()		  { _val.const $*; }
+val()		  { io.echo $*; }
+fn.return()	  { local retval=$1; shift; io.echo "eval echo $* && return $retval"; }
+args.all()	  { io.echo "eval $* \"\$@\""; }
+ass.nowhite() { args.all _ass.nowhite; }
+int()		  { io.echo $*; }
+nb: END
+
+mod.start regexp && {
+
+	regexp.subst()
+	{
+		_regexp.subst "$@"
+	}
+
+	regexp.match()
+	{
+		local pattern=$(val $1);
+		local value=$(val $2);
+
+		local sedvalue=$(regexp.subst $pattern $value);
+		! test "$value" = "$sedvalue";
+	}
+
+	tbd: relocate _regexp.arg ...
+	_regexp.arg()
+	{
+		local nshift=$(int $1);
+		shift $nshift;
+
+		local argval=$(val $1);
+		$(fn.return 0 $argval);
+	}
+
+	regexp.extract()
+	{
+		local pattern=$(val $1);
+		local value=$(val $2);
+		shift 2;
+
+		$(ass.nowhite);
+		local vars=$*;
+		local count=0;
+		local sedresult=$(regexp.subst $pattern $value);
+
+		for i in $vars; do
+			count=$(($count + 1));
+			local -n refvar=$i;
+			refvar=$(_regexp.arg $count $sedresult)
+			echo $refvar
+		done
+	}
+
+	regexp.extract ''
+}
