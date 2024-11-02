@@ -3,9 +3,13 @@
 ### Guard against multiple inclusion.
 # if 'special function' already define, go home."
 
-test "$(type -t uts.isincluded)" = "function" && exit; # TODOTODO change to return.
+dbguts() { return 1; }
 
-echo USING $0;
+incfiles() { echo -n "DBG: incfiles: 0: <${BASH_SOURCE[0]}> <1:${BASH_SOURCE[1]}> 2: <${BASH_SOURCE[2]}> Script: <$0>: " >&2; }
+dbg() { dbguts && incfiles; echo $* >&2; }
+dbgf() { dbguts && dbg "INFILE: <$1>"; }
+
+test "$(type -t uts.isincluded)" = "function" && return;
 
 ### 'real' functionality starts here ###
 
@@ -21,10 +25,12 @@ uts.fileasvar()
 
 function uts.isincluded()
 {
+	dbg "INFILE: uts.uts.shi INFN: uts.isincluded"
+
 	local thisfile=$1;
 	local -n gvar=$(uts.fileasvar $thisfile)
 
-	echo "gvar: $gvar --";
+	echo "gvar: $gvar --" >&2;
 
 	! test -z "$gvar" && return 0;
 
@@ -32,5 +38,3 @@ function uts.isincluded()
 	return 1;
 }
 
-. $0
-. $0

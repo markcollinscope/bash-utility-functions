@@ -1,0 +1,31 @@
+#/bin/bash
+
+declare -g __THISFILE=$0;
+
+dbgtest() { return 1; }
+
+if dbgtest; then
+dbgme() { echo "TEST SCRIPT $__THISFILE: <$*>" >&2; }
+dbgme STARTING TEST PROCESS
+fi
+
+declare -g __TESTFILE=$1;
+
+dbgtest && dbgme "TESTFILE: <$__TESTFILE>"
+
+shift;
+
+if test -z "$__TESTFILE"; then
+
+	dbgtest "TESTFILE: <$__TESTFILE>"
+
+	echo "$__THISFILE: no file to test given" >&2 
+	exit 1;
+fi
+
+dbgtest && dbgme "<$__TESTFILE> - ABOUT TO TEST"
+
+. $__TESTFILE
+
+dbgtest && dbgme "<$__TESTFILE> - COMPLETED TEST"
+
