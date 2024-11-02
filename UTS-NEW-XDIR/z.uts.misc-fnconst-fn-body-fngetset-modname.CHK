@@ -1,6 +1,7 @@
-	_.randstr() { echo $(_.cat RAND_ $(_.rmdot $(_.rmslash $(mktemp /tmp/candelete_XXXXXXXXXXXXXXXXXXX))) ); };
+
+	_.randstr() { echo $(_.cat RAND_ $(_.rmdot $(_.rmslash $(mktemp /tmp/candelete_XXXXXXXXXXXXXXXXXXX))) ); }; #UTSUSE
 	
-	_.modname()
+	_.modname() #UTSUSE
 	{ 
 		local str=$(basename $(_.arg $1));
 		local pre=$(_.prefix);
@@ -9,7 +10,7 @@
 		echo $str | sed "s/$pre//g" | sed "s/$suf//g";
 	}
 
-	_.fnconst()
+	_.fnconst() #UTSUSE
 	{
 		local name=$(_.arg $1);
 		local val=$2;
@@ -24,8 +25,8 @@
 		_.eval "$fntemplate";
 	}
 
-	_.fnbody()
-	{
+	_.fnbody() #UTSUSE
+
 		local fn=$(_.arg $1);
 
 		if ! _.isfn $fn; then
@@ -36,7 +37,7 @@
 		echo "$body"
 	}
 
-	_.fnclone()
+	_.fnclone() #UTSUSE
 	{
 		local from=$(_.arg $1);
 		local to=$(_.arg $2);
@@ -52,7 +53,7 @@
 		eval $fntemplate;
 	}
 
-	_.fngetset()
+	_.fngetset() #UTSUSE
 	{
 		local varname=$(_arg $1);
 		local value=$2;
@@ -76,7 +77,7 @@
 
 	_.fnconst flag.getset --getset
 	
-	_.fnrefprivate()
+	_.fnrefprivate() #UTSUSE
 	{
 		local flag=$(flag.getset);
 		local opt=$(_.arg $1);
@@ -96,7 +97,7 @@
 
 	}
 
-	_.contained_in()
+	_.contained_in() #UTSUSE
 	{
 		local value=$(_.arg $1);
 		shift;

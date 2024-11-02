@@ -34,7 +34,7 @@ if test -z $___uts___; then
 	_.echo_return() { _.eval "$@"; local result=$?; echo $result; }
 	_.noerr.flag() { echo --noerr; }
 
-	_.arg() 
+	_.arg() #UTSUSE
 	{
 		local noerr=1;
 		if test $1 == $(_.noerr.flag); then
@@ -55,7 +55,7 @@ if test -z $___uts___; then
 		echo "$@"; 
 	}
 
-	_.env.var()
+	_.env.var() #UTSUSE
 	{
 		local varname=$(_.arg $1);
 		local default=$2; test -z $default; local usedefault=$?;
@@ -97,7 +97,7 @@ if test -z $___uts___; then
 	_.prefix() { local pre=${UTS_PREFIX:-$(_.default --pre)}; echo $UTS_PREFIX; }
 	_.suffix() { echo .shi; }
 
-	_.stack()
+	_.stack() #UTSUSE
 	{
 		local i=0;
 		local fnname=$(_.fnname $i);
@@ -117,12 +117,12 @@ if test -z $___uts___; then
 	_.debug() { return 0; }
 	_.dbg() { if _.debug; then _.err $*; fi; }
 
-	_.br() { echo "<$*>"; }
+	_.br() { echo "<$*>"; } #UTSUSE
 	_.isfn() { test $(type -t "$1") = 'function'; }
 	_.count() { echo $#; }
 
 
-	uts.rmchars() 
+	uts.rmchars() #UTSUSE
 	{ 
 		local str=$(_.arg $1); shift; 
 
@@ -130,13 +130,14 @@ if test -z $___uts___; then
 		echo $res
 	}
 
+#UTSUSE rmdot rmspace ...
 	_.rmdot() { echo $* | sed 's/\.//g'; }
 	_.rmspace() { echo $* | sed 's/ //g'; }
 	_.rmslash() { _.rmchars '/' $*; }
 	_.rmdash() { _.rmchars '-' $*; }
 	_.cat() { _.rmspace $*; }
 	
-	_.randstr() { echo $(_.cat RAND_ $(_.rmdot $(_.rmslash $(mktemp /tmp/candelete_XXXXXXXXXXXXXXXXXXX))) ); };
+	_.randstr() { echo $(_.cat RAND_ $(_.rmdot $(_.rmslash $(mktemp /tmp/candelete_XXXXXXXXXXXXXXXXXXX))) ); }; #UTSUSE
 
 	_.modname()
 	{ 
@@ -147,7 +148,7 @@ if test -z $___uts___; then
 		echo $str | sed "s/$pre//g" | sed "s/$suf//g";
 	}
 
-	_.fnconst()
+	_.fnconst() #UTSUSE
 	{
 		local name=$(_.arg $1);
 		local val=$2;
@@ -190,7 +191,7 @@ if test -z $___uts___; then
 		eval $fntemplate;
 	}
 
-	_.fngetset()
+	_.fngetset() #UTSUSE check if same as other getset.
 	{
 		local varname=$(_arg $1);
 		local value=$2;
@@ -214,7 +215,7 @@ if test -z $___uts___; then
 
 	_.fnconst flag.getset --getset
 	
-	_.fnrefprivate()
+	_.fnrefprivate() #UTSUSE check if same as other.
 	{
 		local flag=$(flag.getset);
 		local opt=$(_.arg $1);
@@ -250,7 +251,7 @@ if test -z $___uts___; then
 
 	err() { _.err $*; } # todo: remove.
 
-	_.set() {  set -o | grep $1.*on >/dev/null 2>/dev/null; }
+	_.set() {  set -o | grep $1.*on >/dev/null 2>/dev/null; } #UTSUSE -- is this same as other? what does it do?
 
 	_fnconst flag.off --off
 	

@@ -10,6 +10,7 @@ function arg.zero()
 # [-l] - lower limit only required, no upper limit.
 function arg.nargs
 {
+	# UTSUSE
 	local loweronly=false; 
 	if test "$1" = "-l"; then 
 		loweronly=true; 

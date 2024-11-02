@@ -4,8 +4,8 @@
 . uts.unit.shi
 
 
-fn.join()
-{
+fn.join() # UTSUSE
+{ 
 	arg.count.assert 2 2;
 	local fn=$(arg $1)
 	local subfn=$(arg $2)
@@ -19,21 +19,19 @@ opt.bool()
 	boolopt "$@";
 }
 
-function opt.err()
+function opt.err() # UTSUSE
 {
 	let const_opt='opt bool --err err_opt "$@"'
 	echo $const_opt;
 }
 
-function fn.exists()
+function fn.exists() # UTSUSE
 {
 	test $(type -t $1) = function
 }
 
 function fn.redefine() # just docco for now.
 {
-	if arg.null $1
-
 	local fnname=$(arg $1)
 }
 

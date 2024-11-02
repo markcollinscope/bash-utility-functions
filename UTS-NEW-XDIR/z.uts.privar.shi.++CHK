@@ -1,20 +1,22 @@
 #!/bin/bash
 
-uts.pid() { echo $$; }
+#UTSUSE privar.CHK -- seems well tested - use it. pid, noargs, callif ...
+
+uts.pid() { echo $$; } #UTSUSE
 uts.noargs() { test -z $*; }
 uts.rmwhite() { echo $* | sed 's/ //g' | sed 's/\t//g'; }
 
-uts.istype()
+uts.istype() #UTSUSE
 {
 	test $(type -t $1) = $2;
 }
 
-uts.isfn()
+uts.isfn() #UTSUSE
 {
 	uts.istype $1 'function';
 }
 
-uts.callif()
+uts.callif() #UTSUSE
 {
 	local possiblefn=$1;
 	shift;
@@ -27,7 +29,7 @@ uts.callif()
 	fi
 }
 
-uts.argcmp()
+uts.argcmp() #UTSUSE
 { 
 	local num=$1; 
 	local value=$2; 
@@ -57,7 +59,7 @@ uts.error()
 	>&2 echo $*;
 }
 
-uts.usererr()
+uts.usererr() #UTSUSE
 {
 	local err=1;
 	if ! test -z $1; then
@@ -72,7 +74,7 @@ uts.usererr()
 }
 
 
-uts.privar()
+uts.privar() #UTSUSE
 {
 	local pvarname=$(_pv.name)
 	echo $pvarname

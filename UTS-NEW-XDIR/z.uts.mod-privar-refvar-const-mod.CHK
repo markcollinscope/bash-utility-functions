@@ -1,9 +1,10 @@
-puid()
+
+puid() #UTSUSE
 {
     echo $$;
 }
 
-privar() # types, eg. list? arr?
+privar() # types, eg. list? arr? #UTSUSE MAYBE
 {
     local varname=$1;
     local sep='_privar_';
@@ -24,7 +25,7 @@ privar() # types, eg. list? arr?
 declare -g $(privar egvar)=initvalue;
 declare -g --Arr $(privar refvarlist);
 
-refvar() # new variable 'created' - global, bit like new fn.
+refvar() # new variable 'created' - global, bit like new fn. #UTSUSE
 {
     local varname=$1;
     local refvarname=$(uts.cat $varname $sep $(puid));
@@ -35,7 +36,7 @@ const name;
 const doc;
 const fns;
 
-enum modprops $(name) $(doc) $(fns);
+enum modprops $(name) $(doc) $(fns); #UTSUSE
 mod()
 {
     local name=$1;
