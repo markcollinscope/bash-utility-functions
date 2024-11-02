@@ -1,0 +1,36 @@
+#/bin/bash
+
+### Guard against multiple inclusion.
+# if 'special function' already define, go home."
+
+test "$(type -t __fn)" = "function" && exit; # TODOTODO change to return.
+
+# define special fn.
+__fn() { :; }
+
+### 'real' functionality starts here ###
+_glob.mkvar()
+{
+	echo GVAR >&2
+	echo GVAR;
+	return;
+
+	local name=$(basename $1);
+	name=$(sed 's/\./_/g' <<< $name);
+	name=___$name;
+	echo $name;
+}
+
+thisfile.included()
+{
+	local thisfile=$1;
+	local -n gvar=$(_glob.mkvar $thisfile)
+
+	echo "gvar: $gvar --";
+
+	! test -z "$gvar" && return 0;
+
+	gvar=included
+	return 1;
+}
+

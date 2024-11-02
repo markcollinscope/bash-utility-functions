@@ -29,6 +29,8 @@ if $__UTS_ECHO_INTERCEPT; then
 
 fi
 
+_sys.code()	  { base64 - <<< "$@"; }
+_sys.decode() { base64 -d - <<< "$@"; }
 _sys.eval()	  { eval "$@"; }
 _sys.fnname() { local level=${1:-1};  _io.echo ${FUNCNAME[$level]}; }
 _io.echo()	  { echo $*; }

@@ -1,0 +1,17 @@
+code() { base64 - <<< "$@"; }
+../mark/GIT/misc/CGPT[* baseline](lappie): code  hello
+aGVsbG8K
+../mark/GIT/misc/CGPT[* baseline](lappie): code  hello^C
+../mark/GIT/misc/CGPT[* baseline](lappie): 
+../mark/GIT/misc/CGPT[* baseline](lappie): 
+../mark/GIT/misc/CGPT[* baseline](lappie): decode() { base64 -d - <<< "$@"; }
+../mark/GIT/misc/CGPT[* baseline](lappie): x=$(code hello there!)
+bash: !: event not found
+../mark/GIT/misc/CGPT[* baseline](lappie): decode() { base64 -d - <<< "$@"^C^C}
+../mark/GIT/misc/CGPT[* baseline](lappie): 
+../mark/GIT/misc/CGPT[* baseline](lappie): 
+../mark/GIT/misc/CGPT[* baseline](lappie): code  hello world
+aGVsbG8gd29ybGQK
+../mark/GIT/misc/CGPT[* baseline](lappie): decode $(code hello world)
+hello world
+../mark/GIT/misc/CGPT[* baseline](lappie): fndef code
