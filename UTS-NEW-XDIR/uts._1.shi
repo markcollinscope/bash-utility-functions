@@ -12,14 +12,16 @@
 dbg "INCLUDE: START uts._1"
 
 if uts.isincluded ${BASH_SOURCE[0]} ; then 
+
 	dbg "RETURNING AS ALREADY INCLUDED <${BASH_SOURCE[0]}>";
+
 	return 1;
 fi
 
 dbg "INCLUDE: PAST REINCLUDE TEST: uts._1"
 dbg "INCLUDE: REINCLUDE SELF ... "
 
-. uts._1.shi
+source uts._1.shi
 
 dbg "INCLUDE POST INCLUDE SELF ... ERROR IF THIS APPEARS TWICE"
 

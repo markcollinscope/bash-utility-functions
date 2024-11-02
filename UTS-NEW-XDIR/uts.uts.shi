@@ -3,20 +3,75 @@
 ### Guard against multiple inclusion.
 # if 'special function' already define, go home."
 
-dbguts() { return 1; }
+if true; then
+ BLACK="\e[30m"
+ RED="\e[31m"		
+ LIGHTRED="\e[91m"	
+ GREEN="\e[32m"		
+ YELLOW="\e[33m"
+ BLUE="\e[34m"
+ MAGENTA="\e[35m"
+ CYAN="\e[36m"
+ WHITE="\e[37m"
+ NORMAL="\e[0m"
+ RESET=$NORMAL
 
-incfiles() { echo -n "DBG: incfiles: 0: <${BASH_SOURCE[0]}> <1:${BASH_SOURCE[1]}> 2: <${BASH_SOURCE[2]}> Script: <$0>: " >&2; }
-dbg() { dbguts && incfiles; echo $* >&2; }
+isTerminalOutput() 
+# if the current output stream (1, 2 ...) is to a terminal return true (0), else false (1)
+{
+	return 0;
+}
+
+setcol() # <color code>
+# set text color - see VT100 color codes in this file. 
+# color code values include: BLACK RED LIGHTRED GREEN YELLOW BLUE MAGENTA CYAN WHITE NORMAL RESET (both WHITE).
+# precede color code with $ (e.g. $BLACK).
+{
+	local COLOR=$1; 
+	if $UTS_NOCOLOR; then return 0; fi
+
+	if isTerminalOutput; then echo -n -e $COLOR; fi
+	if isTerminalOutput 2; then >&2 echo -n -e $COLOR; fi
+
+	return 0;
+}
+setcolnorm() 
+# reset text color to 'normal'. 
+{
+	setcol $NORMAL
+}
+resetcol() 
+# reset text color to 'normal'. 
+{ 	
+	setcolnorm; 
+} 
+
+red() { setcol $RED; }
+normal() { resetcol; }
+
+red; echo processed color; normal; 
+
+fi
+
+echo $RED;
+
+dbguts() { return 0; }
+
+dbguts && incfiles() 
+{ echo -n "DBG: incfiles: 0: <${BASH_SOURCE[0]}> <1:${BASH_SOURCE[1]}> 2: <${BASH_SOURCE[2]}> Script: <$0>: " >&2; }
+dbg() { dbguts && incfiles && red && echo $* >&2 && normal; }
 dbgf() { dbguts && dbg "INFILE: <$1>"; }
+
+dbg "UTS GLOBAL DEBUGGING ON"
+
+# return from this file itself (as it is included using the bash 'source'/'.' command) has already been included.
 
 test "$(type -t uts.isincluded)" = "function" && return;
 
 ### 'real' functionality starts here ###
 
-uts.fileasvar()
+false && uts.fileasvar()
 {
-	echo mkvar: $* >&2
-
 	local name=$(basename $1);
 	name=$(sed 's/\./_/g' <<< $name);
 	name=___$name;
@@ -27,14 +82,18 @@ function uts.isincluded()
 {
 	dbg "INFILE: uts.uts.shi INFN: uts.isincluded"
 
-	local thisfile=$1;
-	local -n gvar=$(uts.fileasvar $thisfile)
+	local file=$1;
+	local name=$(basename $file);
+	name=$(sed 's/\./_/g' <<< $name);
+	name=___$name;
 
-	echo "gvar: $gvar --" >&2;
+	local -n refglobalvar=$name;
 
-	! test -z "$gvar" && return 0;
+	dbg "refglobalvar: $refglobalvar --" >&2;
 
-	gvar=included
+	! test -z "$refglobalvar" && return 0;
+
+	refglobalvar=included
 	return 1;
 }
 

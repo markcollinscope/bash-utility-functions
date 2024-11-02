@@ -1,31 +1,27 @@
 #/bin/bash
 
-declare -g __THISFILE=$0;
+_dbgtest() { return 1; }
 
-dbgtest() { return 1; }
+_thisfile() { echo $0; }
+eval "_testfile() { echo $1; }";
 
-if dbgtest; then
-dbgme() { echo "TEST SCRIPT $__THISFILE: <$*>" >&2; }
-dbgme STARTING TEST PROCESS
+if _dbgtest; then
+	dbgme() { echo "TEST SCRIPT $(_thisfile): <$*>" >&2; }
+	dbgme STARTING TEST PROCESS
 fi
 
-declare -g __TESTFILE=$1;
+_dbgtest && dbgme "TESTFILE: <$(_thisfile)>"
 
-dbgtest && dbgme "TESTFILE: <$__TESTFILE>"
+if test -z "$(_thisfile)"; then
+	_dbgtest "TESTFILE: <$(_thisfile)>"
 
-shift;
-
-if test -z "$__TESTFILE"; then
-
-	dbgtest "TESTFILE: <$__TESTFILE>"
-
-	echo "$__THISFILE: no file to test given" >&2 
+	echo "$___thisfile: no file to test given" >&2 
 	exit 1;
 fi
 
-dbgtest && dbgme "<$__TESTFILE> - ABOUT TO TEST"
+_dbgtest && dbgme "<$(_thisfile)> - ABOUT TO TEST"
 
-. $__TESTFILE
+source $(_testfile)
 
-dbgtest && dbgme "<$__TESTFILE> - COMPLETED TEST"
+_dbgtest && dbgme "<$(_thisfile)> - COMPLETED TEST"
 
