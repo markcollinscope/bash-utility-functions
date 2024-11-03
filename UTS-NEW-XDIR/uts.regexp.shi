@@ -1,10 +1,11 @@
 # /bin/bash
 
-. uts._1.shi
+source uts._1.shi
 
 nb: REDO
 readonly TRUE=0;
 readonly FALSE=1;
+dbg()		  { echo "[DBG ${FUNCNAME[0]}]: $* (dbg)" >&2; }
 io.echo()	  { echo $*; }
 mod.start()	  { return 0; }
 const()		  { _val.const $*; }
@@ -13,13 +14,60 @@ fn.return()	  { local retval=$1; shift; io.echo "eval echo $* && return $retval"
 args.all()	  { io.echo "eval $* \"\$@\""; }
 ass.nowhite() { args.all _ass.nowhite; }
 int()		  { io.echo $*; }
+args.echo()	  { args.all io.echo; }
+val1()		  { io.echo  eval echo \""$@"\"; }
+args.count()  { io.echo $#; }
+
 nb: END
 
-mod.start regexp && {
+. uts.unit.shi
 
-	regexp.subst()
+str="one two three"
+dbg count $(args.count $(val1 $str))
+
+exit;
+
+mod.start regexp || return 0;
+
+	tst.active && function test.args.all()
 	{
-		_regexp.subst "$@"
+		tstfn()
+		{
+			args.all io.echo
+		}
+
+		local in="arg1 arg2 arg3";
+		local xout=$(val1 $in)
+
+		dbg xoutcnt: $(args.count $(val1 $xout))
+
+		local out=$(tstfn $in);
+
+		tst.assert --same $(val1 $in) $(val1 $out);
+	}
+
+	regexp()
+	{
+		tbd: validate.
+		tbc: from? to? both?
+		$(args.echo);
+	}
+
+	tst.active && function test.regexp()
+	{
+		local in='.*'
+		local xout="$in";
+		local out=$(regexp $in);
+
+		tst.assert --same $in $xout;
+	}
+
+	sed.subst() 
+	{
+		local from=$(val $1);
+		local to=$(regexp $2)
+
+		echo $(sed "$@");
 	}
 
 	regexp.match()
@@ -32,6 +80,7 @@ mod.start regexp && {
 	}
 
 	tbd: relocate _regexp.arg ...
+
 	_regexp.arg()
 	{
 		local nshift=$(int $1);
@@ -48,6 +97,7 @@ mod.start regexp && {
 		shift 2;
 
 		$(ass.nowhite);
+
 		local vars=$*;
 		local count=0;
 		local sedresult=$(regexp.subst $pattern $value);
@@ -60,5 +110,4 @@ mod.start regexp && {
 		done
 	}
 
-	regexp.extract ''
-}
+	tst.run;

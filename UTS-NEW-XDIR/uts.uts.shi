@@ -49,13 +49,9 @@ resetcol()
 red() { setcol $RED; }
 normal() { resetcol; }
 
-red; echo processed color; normal; 
-
 fi
 
-echo $RED;
-
-dbguts() { return 0; }
+dbguts() { return 1; }
 
 dbguts && incfiles() 
 { echo -n "DBG: incfiles: 0: <${BASH_SOURCE[0]}> <1:${BASH_SOURCE[1]}> 2: <${BASH_SOURCE[2]}> Script: <$0>: " >&2; }

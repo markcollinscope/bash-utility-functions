@@ -2,8 +2,6 @@
 
 # See 'Public API' below.
 
-echo $0: $*
-
 SRC=$0
 SHTEST_SUFFIX={SHTEST_SUFFIX:-"sht"}
 SHTESTREGEX=${SHTESTREGEX:-"^.*function.*test.*()"}	# how to find tests (using grep). can be modified.
@@ -18,15 +16,28 @@ SELFTESTMODE=false;
 _setSelfTestMode() { SELFTESTMODE=true; }
 _inSelfTestMode() { if $SELFTESTMODE; then return 0; else return 1; fi }
 
-if test "$1" = "--selftest"; then
-	_setSelfTestMode;
-	shift;
-fi
+set -u
 
+readonly __SHUNIT_SELFTEST="--selftest"
 readonly __SHUNIT_VERBOSE_FLAG__="-v"
 declare -g __SHUNIT_VERBOSE__=1;
 
-if test "$1" = $__SHUNIT_VERBOSE_FLAG__; then
+declare -g __SHUNIT_FIRST_ARG__=${1-"notselftest"};
+
+if test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_VERBOSE_FLAG__"; then
+	>&2 echo "Error: the <$__SHUNIT_SELFTEST> flag must preceed the <$__SHUNIT_VERBOSE_FLAG__> flag" 
+
+	>&2 echo "- e.g \'$(basename $0) $__SHUNIT_SELFTEST $__SHUNIT_VERBOSE_FLAG__\'" 
+
+	>&2 echo "- aborting... have a nice day!" 
+
+	exit 1;
+fi
+
+test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_SELFTEST" && _setSelfTestMode && shift;
+echo $*
+
+if test "$__SHUNIT_FIRST_ARG__" = $__SHUNIT_VERBOSE_FLAG__; then
 	>&2 echo "$0: verbose option selected"
 	__SHUNIT_VERBOSE__=0;
 	shift
@@ -40,8 +51,9 @@ _verbose()
 
 __SHUNIT_TEST_FLAG__="--test";
 __SHUNIT_TEST_ACTIVE__=1;
+__SHUNIT_FIRST_ARG__=${1-"novaluegiven"};
 
-if test "$1" = "$__SHUNIT_TEST_FLAG__"; then
+if test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_TEST_FLAG__"; then
 	if _verbose; then >&2 echo 'testing activated'; fi
 	__SHUNIT_TEST_ACTIVE__=0;
 	shift;
