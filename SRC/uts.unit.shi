@@ -2,63 +2,80 @@
 
 # See 'Public API' below.
 
-SRC=$0
-SHTEST_SUFFIX={SHTEST_SUFFIX:-"sht"}
-SHTESTREGEX=${SHTESTREGEX:-"^.*function.*test.*()"}	# how to find tests (using grep). can be modified.
-
-GLOBALSETUP=${GLOBALSETUP:-"tst.init"}
-setup=${setup:-"tst.setup"}
-teardown=${teardown:-"tst.teardown"}
-
-SELFTESTMODE=false;
-
-# self test related.
-_setSelfTestMode() { SELFTESTMODE=true; }
-_inSelfTestMode() { if $SELFTESTMODE; then return 0; else return 1; fi }
+if true; then
+	echo T/F/0/1 sort it;
+fi
 
 set -u
 
-readonly __SHUNIT_SELFTEST="--selftest"
-readonly __SHUNIT_VERBOSE_FLAG__="-v"
-declare -g __SHUNIT_VERBOSE__=1;
+# IMPORT FROM ENV.
+BASH_UNIT_SUFFIX={BASH_UNIT_SUFFIX:-"sht"}
+BASH_UNIT_REGEX=${BASH_UNIT_REGEX:-"^.*function.*test.*()"}	# how to find tests (using grep). can be modified.
+BASH_UNIT_SETUP=${BASH_UNIT_SETUP:-"tst.init"} #### TODOL
 
-declare -g __SHUNIT_FIRST_ARG__=${1-"notselftest"};
+__SRC__=$0
 
-if test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_VERBOSE_FLAG__"; then
-	>&2 echo "Error: the <$__SHUNIT_SELFTEST> flag must preceed the <$__SHUNIT_VERBOSE_FLAG__> flag" 
+setup=${setup:-"tst.setup"}
+teardown=${teardown:-"tst.teardown"}
 
-	>&2 echo "- e.g \'$(basename $0) $__SHUNIT_SELFTEST $__SHUNIT_VERBOSE_FLAG__\'" 
+declare -g __BASHUNIT_SELFTESTMODE__=false;
 
+# self test related.
+_setSelfTestMode() { __BASHUNIT_SELFTESTMODE__=true; return 0; }
+_inSelfTestMode() { $__BASHUNIT_SELFTESTMODE__; }
+
+set -u
+
+readonly __BASHUNIT_SELFTEST="--selftest"
+readonly __BASHUNIT_VERBOSE_FLAG__="-v"
+declare -g __BASHUNIT_VERBOSE__=1;
+
+declare -g __BASHUNIT_FIRST_ARG__=${1-}
+
+if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_VERBOSE_FLAG__"; then
+	>&2 echo "Error: the <$__BASHUNIT_SELFTEST> flag must preceed the <$__BASHUNIT_VERBOSE_FLAG__> flag" 
+	>&2 echo "- e.g '$(basename $0) $__BASHUNIT_SELFTEST $__BASHUNIT_VERBOSE_FLAG__'" 
 	>&2 echo "- aborting... have a nice day!" 
 
 	exit 1;
 fi
 
-test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_SELFTEST" && _setSelfTestMode && shift;
-echo $*
+X=true
+test $X && echo XTRUE;
 
-if test "$__SHUNIT_FIRST_ARG__" = $__SHUNIT_VERBOSE_FLAG__; then
+true && echo T1
+true || echo F1
+false && echo T2
+false || echo F2
+
+test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_SELFTEST" && _setSelfTestMode && shift;
+
+if test "$__BASHUNIT_FIRST_ARG__" = $__BASHUNIT_VERBOSE_FLAG__; then
 	>&2 echo "$0: verbose option selected"
-	__SHUNIT_VERBOSE__=0;
+	__BASHUNIT_VERBOSE__=0;
 	shift
 fi
 
 _verbose()
 {
-	return $__SHUNIT_VERBOSE__; 
+	>&2 echo VERBOSE: $__BASHUNIT_VERBOSE__
+	return $__BASHUNIT_VERBOSE__; 
 }
 
 
-__SHUNIT_TEST_FLAG__="--test";
-__SHUNIT_TEST_ACTIVE__=1;
-__SHUNIT_FIRST_ARG__=${1-"novaluegiven"};
+readonly __BASHUNIT_TEST_FLAG__="--test";
+declare -g __BASHUNIT_TEST_ACTIVE__=1;
+declare -g __BASHUNIT_FIRST_ARG__=${1-}
 
-if test "$__SHUNIT_FIRST_ARG__" = "$__SHUNIT_TEST_FLAG__"; then
+if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_TEST_FLAG__"; then
+	echo VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVvv
 	if _verbose; then >&2 echo 'testing activated'; fi
-	__SHUNIT_TEST_ACTIVE__=0;
+	__BASHUNIT_TEST_ACTIVE__=0;
 	shift;
 fi 
 
+_verbose
+echo "VERBOSE: $?"
 
 _red()
 {
@@ -78,11 +95,11 @@ _green()
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
 
-_vb() { if _verbose; then >&2 echo "$@"; fi }
+_vb() { if _verbose; then _green; >&2 echo "$@"; fi }
 
 _findTests()
 {
-	local TESTS=$(grep "$SHTESTREGEX" $SRC | sed 's/()//' | sed 's/function//'; );
+	local TESTS=$(grep "$BASH_UNIT_REGEX" $__SRC__ | sed 's/()//' | sed 's/function//'; );
     echo $TESTS
 }
 
@@ -112,7 +129,7 @@ _passFailAssert()
 ### PUBLIC API ###
 function tst.active()
 {
-	return $__SHUNIT_TEST_ACTIVE__;
+	return $__BASHUNIT_TEST_ACTIVE__;
 }
 
 function tst.assertSame()
@@ -221,7 +238,7 @@ function tst.run()
 	>&2 echo "TESTS: $TESTS";
 	>&2 echo
 
-	_callifdefined $GLOBALSETUP;
+	_callifdefined $BASH_UNIT_SETUP;
 
 	for test in $TESTS; do
 		_TEST_CNT=$((_TEST_CNT+1));
@@ -263,7 +280,7 @@ function test.mock_1()
 function test.mock_2()
 { tst.assertSame "1" "0"; tst.assertDiff "0" "0"; }
 
-echo "BASIC SELF TEST ON: $SRC"
+echo "BASIC SELF TEST ON: $__SRC__"
 _SELFTESTOK=true;
 
 _chkResult()
@@ -276,7 +293,7 @@ _chkResult()
 
 _doSelfTest()
 {
-	__SHUNIT_VERBOSE__=0;
+	__BASHUNIT_VERBOSE__=0;
 	
 	tst.run
 	tst.report
@@ -301,6 +318,6 @@ _doSelfTest()
 	fi
 }
 
-_doSelfTest
+_doSelfTest 2>&1 | more
 
 fi
