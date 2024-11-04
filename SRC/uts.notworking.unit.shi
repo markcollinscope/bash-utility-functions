@@ -40,13 +40,6 @@ if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_VERBOSE_FLAG__"; then
 	exit 1;
 fi
 
-X=true
-test $X && echo XTRUE;
-
-true && echo T1
-true || echo F1
-false && echo T2
-false || echo F2
 
 test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_SELFTEST" && _setSelfTestMode && shift;
 
@@ -74,9 +67,6 @@ if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_TEST_FLAG__"; then
 	shift;
 fi 
 
-_verbose
-echo "VERBOSE: $?"
-
 _red()
 {
 	echo -ne "\e[31m"
@@ -95,7 +85,7 @@ _green()
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
 
-_vb() { if _verbose; then _green; >&2 echo "$@"; fi }
+_vb() { if _verbose; then >&2 echo "$@"; fi }
 
 _findTests()
 {
