@@ -1,0 +1,313 @@
+#!/bin/bash
+
+# See 'Public API' below.
+
+if true; then
+	echo T/F/0/1 sort it;
+fi
+
+set -u
+
+# IMPORT FROM ENV.
+BASH_UNIT_SUFFIX={BASH_UNIT_SUFFIX:-"sht"}
+BASH_UNIT_REGEX=${BASH_UNIT_REGEX:-"^.*function.*test.*()"}	# how to find tests (using grep). can be modified.
+BASH_UNIT_SETUP=${BASH_UNIT_SETUP:-"tst.init"} #### TODOL
+
+__SRC__=$0
+
+setup=${setup:-"tst.setup"}
+teardown=${teardown:-"tst.teardown"}
+
+declare -g __BASHUNIT_SELFTESTMODE__=false;
+
+# self test related.
+_setSelfTestMode() { __BASHUNIT_SELFTESTMODE__=true; return 0; }
+_inSelfTestMode() { $__BASHUNIT_SELFTESTMODE__; }
+
+set -u
+
+readonly __BASHUNIT_SELFTEST="--selftest"
+readonly __BASHUNIT_VERBOSE_FLAG__="-v"
+declare -g __BASHUNIT_VERBOSE__=1;
+
+declare -g __BASHUNIT_FIRST_ARG__=${1-}
+
+if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_VERBOSE_FLAG__"; then
+	>&2 echo "Error: the <$__BASHUNIT_SELFTEST> flag must preceed the <$__BASHUNIT_VERBOSE_FLAG__> flag" 
+	>&2 echo "- e.g '$(basename $0) $__BASHUNIT_SELFTEST $__BASHUNIT_VERBOSE_FLAG__'" 
+	>&2 echo "- aborting... have a nice day!" 
+
+	exit 1;
+fi
+
+
+test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_SELFTEST" && _setSelfTestMode && shift;
+
+if test "$__BASHUNIT_FIRST_ARG__" = $__BASHUNIT_VERBOSE_FLAG__; then
+	>&2 echo "$0: verbose option selected"
+	__BASHUNIT_VERBOSE__=0;
+	shift
+fi
+
+_verbose()
+{
+	>&2 echo VERBOSE: $__BASHUNIT_VERBOSE__
+	return $__BASHUNIT_VERBOSE__; 
+}
+
+
+readonly __BASHUNIT_TEST_FLAG__="--test";
+declare -g __BASHUNIT_TEST_ACTIVE__=1;
+declare -g __BASHUNIT_FIRST_ARG__=${1-}
+
+if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_TEST_FLAG__"; then
+	echo VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVvv
+	if _verbose; then >&2 echo 'testing activated'; fi
+	__BASHUNIT_TEST_ACTIVE__=0;
+	shift;
+fi 
+
+_red()
+{
+	echo -ne "\e[31m"
+}
+
+_white()
+{
+	echo -ne "\e[37m"
+}
+
+_green()
+{
+	echo -ne "\e[32m"
+}
+
+# finding and running unit tests.
+_callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
+
+_vb() { if _verbose; then >&2 echo "$@"; fi }
+
+_findTests()
+{
+	local TESTS=$(grep "$BASH_UNIT_REGEX" $__SRC__ | sed 's/()//' | sed 's/function//'; );
+    echo $TESTS
+}
+
+_passFailAssert()
+{
+	local ASSERTION_SUCCESS=$1;
+	shift;
+
+	_ASSERT_COUNT=$((_ASSERT_COUNT+1))
+
+	if $ASSERTION_SUCCESS; then
+		_green
+		if _verbose; then
+			echo "${FUNCNAME[2]} -- Assertion Passed ("$@")";
+		fi
+		_ASSERT_PASSES=$((_ASSERT_PASSES+1))
+		_white
+	else 
+		_red
+		echo "${FUNCNAME[2]} -- Assertion Failed("$@")";
+		_ASSERT_FAILS=$((_ASSERT_FAILS+1))
+		_THIS_TEST_PASSES=false;
+		_white
+	fi
+}
+
+### PUBLIC API ###
+function tst.active()
+{
+	return $__BASHUNIT_TEST_ACTIVE__;
+}
+
+function tst.assertSame()
+{
+	local VAL1="$1";
+	local VAL2="$2";
+
+	_vb "VAL1: $VAL1, VAL2: $VAL2" >&2
+
+	local HAS_PASSED=false;
+
+	if test "$VAL1" = "$VAL2"; then HAS_PASSED=true; fi
+	_vb "PASS: $HAS_PASSED"
+
+	_passFailAssert $HAS_PASSED tst.assertSame "<$VAL1>" "<$VAL2>"
+}
+
+function tst.assertDiff()
+{
+	local VAL1=$1;
+	local VAL2=$2;
+
+	local HAS_PASSED=false;
+	if ! test "$VAL1" = "$VAL2"; then HAS_PASSED=true; fi
+
+	_passFailAssert $HAS_PASSED tst.assertDiff "$@";
+}
+
+function tst.assert()
+{
+	if test "$1" = "--same"; then
+		shift;
+		tst.assertSame "$@"
+	
+	elif test "$1" = "--diff"; then
+		shift;
+		tst.assertDiff "$@"
+	
+	elif test "$1" = "--true"; then
+		shift;
+		tst.assertSame true "$@"
+	
+	elif test "$1" = "--false"; then
+		shift;
+		tst.assertSame false "$@"
+	
+	elif test "$1" = "--ok"; then
+		shift;
+		tst.assertSame 0 "$@";
+
+	elif test "$1" = "--err"; then
+		shift;
+		tst.assertDiff 0 "$@";
+	
+	else
+		>&2 echo "$0: no such option: $1 - testing fully aborted";
+		exit 1;
+	fi
+}
+
+function tst.report()
+{
+	local STATUS_MESSAGE="TEST FAILURE(S)FOUND";
+	local pass=false;
+	
+	if test "$_ASSERT_FAILS" = "0"; 
+		then 
+		STATUS_MESSAGE="ALL TESTS PASSED"; 
+		pass=true;	
+	fi
+
+	cat <<ENDCAT
+
+	Test Report
+	-----------
+	TOTAL ASSERTIONS:              $_ASSERT_COUNT
+	ASSERTION_SUCCESS:             $_ASSERT_PASSES
+	ASSERTION FAILURES:            $_ASSERT_FAILS
+	-----------
+	TOTAL TESTS:                   $_TEST_CNT
+	TEST PASSES:                   $_TEST_PASSES
+	TEST FAILURES:                 $_TEST_FAILS
+	-----------
+ENDCAT
+
+	if $pass; then _green; else _red; fi
+
+cat <<ENDCAT
+	($STATUS_MESSAGE)
+ENDCAT
+	_white;
+}
+
+_ASSERT_COUNT=0
+_ASSERT_PASSES=0
+_ASSERT_FAILS=0
+
+_TEST_PASSES=0;
+_TEST_FAILS=0;
+_TEST_CNT=0;
+
+function tst.run()
+{
+	local TESTS=$(_findTests);
+
+	>&2 echo "TESTS: $TESTS";
+	>&2 echo
+
+	_callifdefined $BASH_UNIT_SETUP;
+
+	for test in $TESTS; do
+		_TEST_CNT=$((_TEST_CNT+1));
+		_THIS_TEST_PASSES=true;
+
+		_callifdefined $setup;
+		_callifdefined $test;
+		_callifdefined $teardown
+
+		if $_THIS_TEST_PASSES; then
+			>&2 echo -e "**** $test -- Test Passed ****";
+			>&2 echo
+			_TEST_PASSES=$((_TEST_PASSES+1));
+		else
+			>&2 echo "**** $test -- Test Failed ****";
+			>&2 echo
+			_TEST_FAILS=$((_TEST_FAILS+1));
+		fi
+	done
+
+	if ! _inSelfTestMode; then tst.report; fi
+}
+
+
+# SELF TEST
+if _inSelfTestMode; then
+# no indent.
+
+# "Mock setup and tear down to check they are running correctly"
+tst.init() 		{ tst.assertSame 1 1; }
+tst.setup() 	{ tst.assertDiff 222 999; }
+tst.teardown() 	{ tst.assertSame 100 100; }
+
+# check this runs.
+function test.mock_1()
+{ tst.assertSame "1" "1"; tst.assertDiff "1" "0"; }
+
+# check this runs.
+function test.mock_2()
+{ tst.assertSame "1" "0"; tst.assertDiff "0" "0"; }
+
+echo "BASIC SELF TEST ON: $__SRC__"
+_SELFTESTOK=true;
+
+_chkResult()
+{
+	if ! test "$1" = "$2"; then 
+		>&2 echo "\"$@\": SELF TEST FAILED (SAME)";
+		_SELFTESTOK=false;
+	fi
+}
+
+_doSelfTest()
+{
+	__BASHUNIT_VERBOSE__=0;
+	
+	tst.run
+	tst.report
+
+	_chkResult $_TEST_CNT 2      "-- Number Of Tests is 2";
+	_chkResult $_TEST_PASSES 1   "-- Number of Test Passes is 2";
+	_chkResult $_TEST_FAILS 1    "-- Number of Test Fails is 0";
+	_chkResult $_ASSERT_FAILS 2  "-- Assert fails is 2"
+	_chkResult $_ASSERT_PASSES 7 "-- Assert passes is 2"
+
+	if $_SELFTESTOK; then 
+		echo "nb: it is expected that some tests reported above will fail - this is part of the self-test"
+		_green
+		echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+		_white
+	else
+		echo
+		_red
+		echo
+		echo "!!!! FAILURE OF SELF TEST !!!";
+		_white
+	fi
+}
+
+_doSelfTest 2>&1 | more
+
+fi

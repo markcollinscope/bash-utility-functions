@@ -1,0 +1,190 @@
+#!/bin/bash
+
+SRC=$0
+
+SHTEST=${SHTEST:-"shtest"}
+SHTEST_SUFFIX={SHTEST_SUFFIX:-"sht"}
+GREPFOR=${GREPFOR:-"^\S*$SHTEST\S*()$"}	# looks for ^.*shtest.*()$ - can change.
+
+GLOBALSETUP=${GLOBALSETUP:-"globalTestSetup"}
+FNSETUP=${FNSETUP:-"fnTestSetup"}
+FNTEARDOWN=${FNTEARDOWN:-"fnTestTeardown"}
+
+SELFTESTMODE=false;
+
+# self test related.
+_setSelfTestMode() { SELFTESTMODE=true; }
+_inSelfTestMode() { if $SELFTESTMODE; then return 0; else return 1; fi }
+
+if test "$1" = "-t" || test "$1" = "--test"; then
+	_setSelfTestMode;
+	shift;
+fi
+
+# finding and running unit tests.
+
+_callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
+
+_findTests()
+{
+    local TESTS=$(grep "$GREPFOR" $SRC | sed 's/()//');
+    echo $TESTS
+}
+
+_passFailAssert()
+{
+	local ASSERTION_SUCCESS=$1;
+	shift;
+
+	_ASSERT_COUNT=$((_ASSERT_COUNT+1))
+
+	if $ASSERTION_SUCCESS; then
+		>&2 echo "${FUNCNAME[2]} -- Assertion Passed ("$@")";
+		_ASSERT_PASSES=$((_ASSERT_PASSES+1))
+	else 
+		>&2 echo "${FUNCNAME[2]} -- Assertion Failed("$@")";
+		_ASSERT_FAILS=$((_ASSERT_FAILS+1))
+		_THIS_TEST_PASSES=false;
+	fi
+}
+
+# PUBLIC API
+
+assertSame()
+{
+	local ARG1="$1";
+	local ARG2="$2";
+	
+	local HAS_PASSED=false;
+	if test "$ARG1" = "$ARG2"; then HAS_PASSED=true; fi
+
+	_passFailAssert $HAS_PASSED assertSame "$@";
+}
+
+assertDiff()
+{
+	local ARG1=$1;
+	local ARG2=$2;
+
+	local HAS_PASSED=false;
+	if ! test "$ARG1" = "$ARG2"; then HAS_PASSED=true; fi
+
+	_passFailAssert $HAS_PASSED assertDiff "$@";
+}
+
+reportTotals()
+{
+	local STATUS_MESSAGE="TEST FAILURE(S)FOUND";
+	if test "$_ASSERT_FAILS" = "0"; then STATUS_MESSAGE="ALL TESTS PASSED"; fi
+
+	cat <<ENDCAT
+
+	Test Report
+	-----------
+	TOTAL ASSERTIONS:              $_ASSERT_COUNT
+	ASSERTION_SUCCESS:             $_ASSERT_PASSES
+	ASSERTION FAILURES:            $_ASSERT_FAILS
+	-----------
+	TOTAL TESTS:                   $_TEST_CNT
+	TEST PASSES:                   $_TEST_PASSES
+	TEST FAILURES:                 $_TEST_FAILS
+	-----------
+	($STATUS_MESSAGE)
+
+ENDCAT
+
+}
+
+_ASSERT_COUNT=0
+_ASSERT_PASSES=0
+_ASSERT_FAILS=0
+
+_TEST_PASSES=0;
+_TEST_FAILS=0;
+_TEST_CNT=0;
+
+runTests()
+{
+	local TESTS=$(_findTests);
+
+	>&2 echo "TESTS: $TESTS";
+	>&2 echo
+
+	_callifdefined $GLOBALSETUP;
+
+	for test in $TESTS; do
+		_TEST_CNT=$((_TEST_CNT+1));
+		_THIS_TEST_PASSES=true;
+
+		_callifdefined $FNSETUP;
+		_callifdefined $test;
+		_callifdefined $FNTEARDOWN
+
+		if $_THIS_TEST_PASSES; then
+			>&2 echo -e "**** $test -- Test Passed ****";
+			>&2 echo
+			_TEST_PASSES=$((_TEST_PASSES+1));
+		else
+			>&2 echo "**** $test -- Test Failed ****";
+			>&2 echo
+			_TEST_FAILS=$((_TEST_FAILS+1));
+		fi
+	done
+
+	if ! _inSelfTestMode; then reportTotals; fi
+}
+
+
+# SELF TEST
+if _inSelfTestMode; then
+# no indent.
+
+# "Mock setup and tear down to check they are running correctly"
+globalTestSetup() 	{ assertSame 1 1; }
+fnTestSetup() 		{ assertDiff 222 999; }
+fnTestTeardown() 	{ assertSame 100 100; }
+
+# check this runs.
+mock_shtest_1()
+{ assertSame "1" "1"; assertDiff "1" "0"; }
+
+# check this runs.
+mock_shtest_2()
+{ assertSame "1" "0"; assertDiff "0" "0"; }
+
+
+echo "BASIC SELF TEST ON: $SRC"
+_SELFTESTOK=true;
+
+_chkResult()
+{
+	if ! test "$1" = "$2"; then 
+		>&2 echo "\"$@\": SELF TEST FAILED (SAME)";
+		_SELFTESTOK=false;
+	fi
+}
+
+_doSelfTest()
+{
+	runTests # > $TMP
+	reportTotals
+
+	_chkResult $_TEST_CNT 2      "-- Number Of Tests is 2";
+	_chkResult $_TEST_PASSES 1   "-- Number of Test Passes is 2";
+	_chkResult $_TEST_FAILS 1    "-- Number of Test Fails is 0";
+	_chkResult $_ASSERT_FAILS 2  "-- Assert fails is 2"
+	_chkResult $_ASSERT_PASSES 7 "-- Assert passes is 2"
+
+	# +add test of output $TMP is ok.
+
+	if $_SELFTESTOK; then 
+		echo "nb: it is expected that some tests reported above will fail - this is part of the self-test"
+		echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+	else
+		echo "!!!! FAILURE OF SELF TEST !!!";
+	fi
+}
+
+_doSelfTest
+
+fi
