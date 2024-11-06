@@ -227,7 +227,6 @@ cat <<ENDCAT
 	($STATUS_MESSAGE)
 
 ENDCAT
-	_unsetcolor;
 }
 
 declare -g _ASSERT_COUNT=0
@@ -290,14 +289,10 @@ if _inSelfTestMode; then
 	function test.mock_1()		{ tst.assert --same "1" "1"; tst.assert --diff "1" "0"; }
 	function test.mock_2()		{ tst.assert --same "1" "0"; tst.assert --diff "0" "0"; }
 
-	_green;
-
 	_vb
 	_vb ******
-	_vb "BASIC SELF TEST ON: <$__SRC__>"
+	_vb "SELF TEST OPTION SELECTED ON: <$__SRC__>"
 	_vb
-
-	_white;
 	
 	_SELFTESTOK=true;
 
@@ -326,7 +321,7 @@ if _inSelfTestMode; then
 			echo "nb: it is expected that some tests reported above will fail - this is *part of the self-test*"
 			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
 			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
-			_white
+			_unsetcolor;
 			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
 			echo
 		else
@@ -334,7 +329,7 @@ if _inSelfTestMode; then
 			_red
 			echo
 			echo "!!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
-			_white
+			_unsetcolor;
 		fi
 	}
 
