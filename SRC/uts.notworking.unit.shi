@@ -32,24 +32,52 @@ __SRC__=$0
 setup=${setup:-"tst.setup"}
 teardown=${teardown:-"tst.teardown"}
 
+_fn()
+{
+	local level=${1:-1};
+	local fn="${FUNCNAME[$level]}"
+
+	echo $fn
+}
+
 _help()
 {
-	nb: __SRC__
 	>&2 echo "WRITE THE HELP SECTION!";
 }
+_help
 
 # self test related.
 _setSelfTestMode() 	{ __BASHUNIT_IN_SELF_TEST_MODE__=0; }
 _inSelfTestMode() 	{ return $__BASHUNIT_IN_SELF_TEST_MODE__; }
+
+# set colors of output, push color to set,and pop to return to previous...
+_rmfirst() 		{ shift; echo "$@"; }
+_addfirst() 	{ echo "$@"; }
+_echofirst() 	{ echo $1; }
+_setcolor()  	{ local cmd="tput setaf $1"; $cmd; $cmd >&2; }
+
+declare -g COLSTACK=
+_pushcolor() 	{ local newcolor=$1; COLSTACK=$(_addfirst $newcolor $COLSTACK); _setcolor $newcolor; }
+_popcolor()		{ COLSTACK=$(_rmfirst $COLSTACK); local previous_color=$(_echofirst $COLSTACK); _setcolor $previous_color; }
+
+_red() 			{ _pushcolor 1; }
+_white() 		{ _pushcolor 7; }
+_green() 		{ _pushcolor 2; }
+_yellow()		{ _pushcolor 3; }
+_unsetcolor()	{ _popcolor; }
+
+# vebose output functions.
 _setVerbose() 		{ __BASHUNIT_VERBOSE__=0; }
 _verbose() 			{ return $__BASHUNIT_VERBOSE__; }
+_vb() 				{ if _verbose; then _yellow; >&2 echo "$@"; _unsetcolor; fi }
 
 if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_SELF_TEST_FLAG__"; then
 	_setSelfTestMode;
 	shift;
 elif  test "$__BASHUNIT_FIRST_ARG__" = $__BASHUNIT_VERBOSE_FLAG__; then
-	>&2 echo "$0: verbose option selected"
 	_setVerbose;
+	_vb
+	_vb "$0: verbose option selected"
 	_setSelfTestMode;
 	shift;
 elif [[ $__BASHUNIT_FIRST_ARG__ == -* ]]; then
@@ -59,33 +87,11 @@ elif [[ $__BASHUNIT_FIRST_ARG__ == -* ]]; then
 	exit 1;
 fi
 
-# vebose output function.
-_vb() { if _verbose; then >&2 echo "$@"; fi }
 
 declare -g 	__BASHUNIT_TEST_ACTIVE__=1;
 
-_tputcolor()
-{
-	local cmd="tput setaf $1";
-	$cmd;
-	$cmd >&2;
-}
+set -u # TODO
 
-_red()
-{
-	_tputcolor 1;
-}
-
-
-_white()
-{
-	_tputcolor 7;
-}
-
-_green()
-{
-	_tputcolor 2;
-}
 
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
@@ -108,13 +114,13 @@ _passFailAssert()
 		_green
 		_vb "${FUNCNAME[2]} -- Assertion Passed ("$@")";
 		_ASSERT_PASSES=$((_ASSERT_PASSES+1))
-		_white
+		_unsetcolor;
 	else 
 		_red
 		_vb "${FUNCNAME[2]} -- Assertion Failed("$@")";
 		_ASSERT_FAILS=$((_ASSERT_FAILS+1))
 		_THIS_TEST_PASSES=false;
-		_white
+		_unsetcolor;
 	fi
 }
 
@@ -156,29 +162,31 @@ function tst.assertDiff()
 # WRAPPER FUNCTION FOR ASSERTS - PREFERED FUNCTION TO USE.
 function tst.assert()
 {
+	local fn=$(_fn 2);
+
 	if test "$1" = "--same"; then
 		shift;
-		tst.assertSame "$@"
+		tst.assertSame $fn "$@"
 	
 	elif test "$1" = "--diff"; then
 		shift;
-		tst.assertDiff "$@"
+		tst.assertDiff $fn "$@"
 	
 	elif test "$1" = "--true"; then
 		shift;
-		tst.assertSame true "$@"
+		tst.assertSame $fn true "$@"
 	
 	elif test "$1" = "--false"; then
 		shift;
-		tst.assertSame false "$@"
+		tst.assertSame $fn false "$@"
 	
 	elif test "$1" = "--ok"; then
 		shift;
-		tst.assertSame 0 "$@";
+		tst.assertSame $fn 0 "$@";
 
 	elif test "$1" = "--err"; then
 		shift;
-		tst.assertDiff 0 "$@";
+		tst.assertDiff $fn 0 "$@";
 	
 	else
 		>&2 echo
@@ -219,7 +227,7 @@ cat <<ENDCAT
 	($STATUS_MESSAGE)
 
 ENDCAT
-	_white;
+	_unsetcolor;
 }
 
 declare -g _ASSERT_COUNT=0
@@ -250,11 +258,18 @@ function tst.run()
 		_callifdefined $test;
 		_callifdefined $teardown
 
+		_vb
 		if $_THIS_TEST_PASSES; then
+			_green
 			_vb "**** $test -- Test Passed ****";
+			_vb
+			_white
 			_TEST_PASSES=$((_TEST_PASSES+1));
 		else
+			_red
 			_vb "**** $test -- Test Failed ****";
+			_vb
+			_white
 			_TEST_FAILS=$((_TEST_FAILS+1));
 		fi
 		_vb
@@ -278,6 +293,7 @@ if _inSelfTestMode; then
 	_green;
 
 	_vb
+	_vb ******
 	_vb "BASIC SELF TEST ON: <$__SRC__>"
 	_vb
 
@@ -309,7 +325,10 @@ if _inSelfTestMode; then
 			echo
 			echo "nb: it is expected that some tests reported above will fail - this is *part of the self-test*"
 			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
 			_white
+			echo "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+			echo
 		else
 			echo
 			_red
@@ -320,5 +339,6 @@ if _inSelfTestMode; then
 	}
 
 	_doSelfTest 2>&1 | more
+	_vb ******
 
 fi
