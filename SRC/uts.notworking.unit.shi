@@ -26,7 +26,7 @@ declare -g __BASHUNIT_IN_SELF_TEST_MODE__=1;
 ###
 BASH_UNIT_SETUP=${BASH_UNIT_SETUP:-"tst.init"} #### TODO WHY?
 
-__SRC__=$0
+__SRC__="$0"
 
 # TODO - WHAT/WHY?
 setup=${setup:-"tst.setup"}
@@ -56,7 +56,7 @@ _addfirst() 	{ echo "$@"; }
 _echofirst() 	{ echo $1; }
 _setcolor()  	{ local cmd="tput setaf $1"; $cmd; $cmd >&2; }
 
-declare -g COLSTACK=
+declare -g COLSTACK=7
 _pushcolor() 	{ local newcolor=$1; COLSTACK=$(_addfirst $newcolor $COLSTACK); _setcolor $newcolor; }
 _popcolor()		{ COLSTACK=$(_rmfirst $COLSTACK); local previous_color=$(_echofirst $COLSTACK); _setcolor $previous_color; }
 
@@ -71,13 +71,13 @@ _setVerbose() 		{ __BASHUNIT_VERBOSE__=0; }
 _verbose() 			{ return $__BASHUNIT_VERBOSE__; }
 _vb() 				{ if _verbose; then _yellow; >&2 echo "$@"; _unsetcolor; fi }
 
+
+# PARSE FOR BASH UNIT RUN OPTIONS
 if test "$__BASHUNIT_FIRST_ARG__" = "$__BASHUNIT_SELF_TEST_FLAG__"; then
 	_setSelfTestMode;
 	shift;
 elif  test "$__BASHUNIT_FIRST_ARG__" = $__BASHUNIT_VERBOSE_FLAG__; then
 	_setVerbose;
-	_vb
-	_vb "$0: verbose option selected"
 	_setSelfTestMode;
 	shift;
 elif [[ $__BASHUNIT_FIRST_ARG__ == -* ]]; then
@@ -87,11 +87,9 @@ elif [[ $__BASHUNIT_FIRST_ARG__ == -* ]]; then
 	exit 1;
 fi
 
-
 declare -g 	__BASHUNIT_TEST_ACTIVE__=1;
 
 set -u # TODO
-
 
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
@@ -112,12 +110,12 @@ _passFailAssert()
 
 	if $ASSERTION_SUCCESS; then
 		_green
-		_vb "${FUNCNAME[2]} -- Assertion Passed ("$@")";
+		_vb "$testfn -- Assertion Passed ("$@")";
 		_ASSERT_PASSES=$((_ASSERT_PASSES+1))
 		_unsetcolor;
 	else 
 		_red
-		_vb "${FUNCNAME[2]} -- Assertion Failed("$@")";
+		_vb "$testfn -- Assertion Failed("$@")";
 		_ASSERT_FAILS=$((_ASSERT_FAILS+1))
 		_THIS_TEST_PASSES=false;
 		_unsetcolor;
@@ -162,7 +160,7 @@ function tst.assertDiff()
 # WRAPPER FUNCTION FOR ASSERTS - PREFERED FUNCTION TO USE.
 function tst.assert()
 {
-	local fn=$(_fn 2);
+	local fn=$(_fn 4);
 
 	if test "$1" = "--same"; then
 		shift;
@@ -227,6 +225,7 @@ cat <<ENDCAT
 	($STATUS_MESSAGE)
 
 ENDCAT
+	_unsetcolor;
 }
 
 declare -g _ASSERT_COUNT=0
@@ -251,6 +250,7 @@ function tst.run()
 		_TEST_CNT=$((_TEST_CNT+1));
 		_THIS_TEST_PASSES=true;
 
+		_vb
 		_vb "TESTING FUNCTION <$test>"
 
 		_callifdefined $setup;
@@ -290,7 +290,7 @@ if _inSelfTestMode; then
 	function test.mock_2()		{ tst.assert --same "1" "0"; tst.assert --diff "0" "0"; }
 
 	_vb
-	_vb ******
+	_vb '######'
 	_vb "SELF TEST OPTION SELECTED ON: <$__SRC__>"
 	_vb
 	
@@ -299,7 +299,7 @@ if _inSelfTestMode; then
 	_chkResult()
 	{
 		if ! test "$1" = "$2"; then 
-			>&2 echo "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
+			_vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
 			_SELFTESTOK=false;
 		fi
 	}
@@ -310,7 +310,7 @@ if _inSelfTestMode; then
 		tst.report
 
 		_chkResult $_TEST_CNT 2;
-		_chkResult $_TEST_PASSES 1;
+		_chkResult $_TEST_PASSES 0;
 		_chkResult $_TEST_FAILS 1;
 		_chkResult $_ASSERT_PASSES 7
 		_chkResult $_ASSERT_FAILS 2
@@ -330,10 +330,11 @@ if _inSelfTestMode; then
 			echo
 			echo "!!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
 			_unsetcolor;
+			echo "!!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
 		fi
 	}
 
 	_doSelfTest 2>&1 | more
-	_vb ******
+	_vb '######'
 
 fi
