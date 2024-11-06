@@ -143,8 +143,9 @@ function tst.assertSame()
 # ASSERT TWO VALUES ($1, $2) ARE DIFFERENT
 function tst.assertDiff()
 {
-	local VAL1=$1;
-	local VAL2=$2;
+	local testfn=$1;
+	local VAL1=$2;
+	local VAL2=$3;
 
 	local HAS_PASSED=false;
 	if ! test "$VAL1" = "$VAL2"; then HAS_PASSED=true; fi
