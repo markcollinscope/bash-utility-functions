@@ -12,11 +12,11 @@ readonly BASH_UNIT_REGEX=${BASH_UNIT_REGEX:-'^.*function.*test.*()'}
 
 ### GLOBAL CONSTS.
 # self test related.
-readonly __BASHUNIT_SELF_TEST_FLAG__="--self"
+readonly __BASHUNIT_SELF_TEST_FLAG="--self"
 readonly __BASHUNIT_VERBOSE_FLAG="--selfvb"
 
 # testing bash scripts/functions realted.
-readonly __BASHUNIT_TEST_FLAG__="--test";
+readonly __BASHUNIT_TEST_FLAG="--test";
 
 ### SCRIPT GLOBAL VARS (BASH: 1 (or any non 0 value) - false, 0 - true - when returned from function).
 declare -g __BASHUNIT_FIRST_ARG=${1-}
@@ -79,7 +79,7 @@ _setSelfTest() 	{ __BASHUNIT_SELFTEST__=0; }
 _selfTest() 	{ return $__BASHUNIT_SELFTEST; }
 
 # PARSE FOR BASH UNIT RUNTIME OPTIONS
-if test "$__BASHUNIT_FIRST_ARG" = "$__BASHUNIT_SELF_TEST_FLAG__"; then
+if test "$__BASHUNIT_FIRST_ARG" = "$__BASHUNIT_SELF_TEST_FLAG"; then
 	_setSelfTest;
 	shift;
 elif  test "$__BASHUNIT_FIRST_ARG" = $__BASHUNIT_VERBOSE_FLAG; then
