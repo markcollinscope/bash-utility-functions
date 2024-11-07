@@ -63,7 +63,7 @@ _unsetcolor()	{ _popcolor; }
 
 # use this function for echo-ing for user output - enables teh output to be switched off.
 declare -g __BASHUNIT_SILENT=1;
-_silent() 	{ return $__BASHUNIT_SILENT; }
+_silent() 	{ return $__BASHUNIT_SILENT}
 _echoif()	{ if ! _silent; then echo $*; fi; }
 _errif()	{ _echoif $* >&2; }
 
@@ -129,10 +129,11 @@ _passFailAssert()
 ###### PUBLIC API - THE FOLLOWING FUNCTIONS ARE THOSE INTENDED FOR USE BY CLIENT CODE (USERS OF THIS FILE)
 
 # IS TESTING MODE ACTIVE?
-declare -g 	__BASHUNIT_TEST_ACTIVE=1;
+declare -g 	__BASHUNIT_TEST_ACTIVE__=1;
+
 function tst.active()
 {
-	return $__BASHUNIT_TEST_ACTIVE;
+	return $__BASHUNIT_TEST_ACTIVE__;
 }
 
 # ASSERT TWO VALUES ($1, $2) ARE THE SAME
@@ -281,7 +282,6 @@ function tst.run()
 
 	if ! _selfTest; then tst.report; fi
 }
-
 
 
 # SELF TEST
