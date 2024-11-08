@@ -114,7 +114,7 @@ elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
 fi
 
 #
-_vb "$__BU_THISFILE: testing... use the <--help> option for more information";
+_vb "$__BU_THISFILE: testing... for help info run: $$__BU_THISFILE --help";
 
 
 # finding and running unit tests.
