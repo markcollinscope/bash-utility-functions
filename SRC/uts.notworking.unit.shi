@@ -6,6 +6,8 @@
 # all the early code is setup.
 ###
 
+set -u # TODO
+
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
 # regular expression definition - used find tests (using grep) client code needing testing.
 readonly BASH_UNIT_REGEX=${BASH_UNIT_REGEX:-'^.*function.*test.*()'}
@@ -68,9 +70,9 @@ _echoif()	{ if ! _silent; then echo $*; fi; }
 _errif()	{ _echoif $* >&2; }
 
 # vebose output functions.
-declare -g __BASHUNIT_VERBOSE__=1;
-_setVerbose() 		{ __BASHUNIT_VERBOSE__=0; }
-_verbose() 			{ return $__BASHUNIT_VERBOSE__; }
+declare -g __BASHUNIT_VERBOSE=1;
+_setVerbose() 		{ __BASHUNIT_VERBOSE=0; }
+_verbose() 			{ return $__BASHUNIT_VERBOSE; }
 _vb() 				{ if _verbose; then _yellow; >&2  _echoif "$@"; _unsetcolor; fi }
 
 # self test related.
@@ -93,7 +95,6 @@ elif [[ $__BASHUNIT_FIRST_ARG == -* ]]; then
 	exit 1;
 fi
 
-set -u # TODO
 
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
@@ -110,18 +111,18 @@ _passFailAssert()
 	local ASSERTION_SUCCESS=$2;
 	shift 2;
 
-	_ASSERT_COUNT=$((_ASSERT_COUNT+1))
+	__ASSERT_COUNT=$((__ASSERT_COUNT+1))
 
 	if $ASSERTION_SUCCESS; then
 		_green
 		_vb "$testfn -- Assertion Passed ("$@")";
-		_ASSERT_PASSES=$((_ASSERT_PASSES+1))
+		__ASSERT_PASSES=$((__ASSERT_PASSES+1))
 		_unsetcolor;
 	else 
 		_red
 		_vb "$testfn -- Assertion Failed("$@")";
-		_ASSERT_FAILS=$((_ASSERT_FAILS+1))
-		_THIS_TEST_PASSES=false;
+		__ASSERT_FAILS=$((__ASSERT_FAILS+1))
+		_THIS__TEST_PASSES=false;
 		_unsetcolor;
 	fi
 }
@@ -139,27 +140,27 @@ function tst.active()
 function tst.assertSame()
 {
 	local testfn=$1;
-	local VAL1="$2";
-	local VAL2="$3";
+	local val1="$2";
+	local val2="$3";
 
-	local HAS_PASSED=false;
+	local has_passed=false;
 
-	if test "$VAL1" = "$VAL2"; then HAS_PASSED=true; fi
+	if test "$val1" = "$val2"; then has_passed=true; fi
 
-	_passFailAssert $testfn $HAS_PASSED tst.assertSame "<$VAL1>" "<$VAL2>"
+	_passFailAssert $testfn $has_passed tst.assertSame "<$val1>" "<$val2>"
 }
 
 # ASSERT TWO VALUES ($1, $2) ARE DIFFERENT
 function tst.assertDiff()
 {
 	local testfn=$1;
-	local VAL1=$2;
-	local VAL2=$3;
+	local val1=$2;
+	local val2=$3;
 
-	local HAS_PASSED=false;
-	if ! test "$VAL1" = "$VAL2"; then HAS_PASSED=true; fi
+	local has_passed=false;
+	if ! test "$val1" = "$val2"; then has_passed=true; fi
 
-	_passFailAssert $testfn $HAS_PASSED tst.assertDiff "$@";
+	_passFailAssert $testfn $has_passed tst.assertDiff "$@";
 }
 
 # WRAPPER FUNCTION FOR ASSERTS - PREFERED FUNCTION TO USE.
@@ -201,11 +202,11 @@ function tst.assert()
 
 function tst.report()
 {
-	local STATUS_MESSAGE="NB: TEST FAILURE(S) FOUND";
+	local status_message="NB: TEST FAILURE(S) FOUND";
 	local pass=false;
 	
-	if test "$_ASSERT_FAILS" = "0"; then 
-		STATUS_MESSAGE="ALL TESTS PASSED"; 
+	if test "$__ASSERT_FAILS" = "0"; then 
+		status_message="ALL TESTS PASSED"; 
 		pass=true;	
 	fi
 
@@ -213,13 +214,13 @@ function tst.report()
 
 	Test Report
 	-----------
-	TOTAL ASSERTIONS:              $_ASSERT_COUNT
-	ASSERTION_SUCCESS:             $_ASSERT_PASSES
-	ASSERTION FAILURES:            $_ASSERT_FAILS
+	TOTAL ASSERTIONS:              $__ASSERT_COUNT
+	ASSERTION_SUCCESS:             $__ASSERT_PASSES
+	ASSERTION FAILURES:            $__ASSERT_FAILS
 	-----------
-	TOTAL TESTS:                   $_TEST_CNT
-	TEST PASSES:                   $_TEST_PASSES
-	TEST FAILURES:                 $_TEST_FAILS
+	TOTAL TESTS:                   $__TEST_CNT
+	TEST PASSES:                   $__TEST_PASSES
+	TEST FAILURES:                 $__TEST_FAILS
 	-----------
 ENDCAT
 
@@ -227,19 +228,19 @@ ENDCAT
 
 cat <<ENDCAT
 
-	($STATUS_MESSAGE)
+	($status_message)
 
 ENDCAT
 	_unsetcolor;
 }
 
-declare -g _ASSERT_COUNT=0
-declare -g _ASSERT_PASSES=0
-declare -g _ASSERT_FAILS=0
+declare -g __ASSERT_COUNT=0
+declare -g __ASSERT_PASSES=0
+declare -g __ASSERT_FAILS=0
 
-declare -g _TEST_PASSES=0;
-declare -g _TEST_FAILS=0;
-declare -g _TEST_CNT=0;
+declare -g __TEST_PASSES=0;
+declare -g __TEST_FAILS=0;
+declare -g __TEST_CNT=0;
 
 function tst.run()
 {
@@ -252,8 +253,8 @@ function tst.run()
 	_callifdefined $BASH_UNIT_SETUP;
 
 	for test in $TESTS; do
-		_TEST_CNT=$((_TEST_CNT+1));
-		_THIS_TEST_PASSES=true;
+		__TEST_CNT=$((__TEST_CNT+1));
+		_THIS__TEST_PASSES=true;
 
 		_vb
 		_vb "TESTING FUNCTION <$test>"
@@ -263,18 +264,18 @@ function tst.run()
 		_callifdefined $teardown
 
 		_vb
-		if $_THIS_TEST_PASSES; then
+		if $_THIS__TEST_PASSES; then
 			_green
 			_vb "**** $test -- Test Passed ****";
 			_vb
 			_white
-			_TEST_PASSES=$((_TEST_PASSES+1));
+			__TEST_PASSES=$((__TEST_PASSES+1));
 		else
 			_red
 			_vb "**** $test -- Test Failed ****";
 			_vb
 			_white
-			_TEST_FAILS=$((_TEST_FAILS+1));
+			__TEST_FAILS=$((__TEST_FAILS+1));
 		fi
 		_vb
 	done
@@ -300,13 +301,13 @@ if _selfTest; then
 	_vb "SELF TEST OPTION SELECTED ON: <$__SRC__>"
 	_vb
 	
-	_SELFTESTOK=true;
+	declare -g __SELFTESTOK=true;
 
 	_chkResult()
 	{
 		if ! test "$1" = "$2"; then 
 			_vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
-			_SELFTESTOK=false;
+			__SELFTESTOK=false;
 		fi
 	}
 
@@ -315,13 +316,13 @@ if _selfTest; then
 		tst.run
 		tst.report
 
-		_chkResult $_TEST_CNT 2;
-		_chkResult $_TEST_PASSES 1;
-		_chkResult $_TEST_FAILS 1;
-		_chkResult $_ASSERT_PASSES 7
-		_chkResult $_ASSERT_FAILS 2
+		_chkResult $__TEST_CNT 2;
+		_chkResult $__TEST_PASSES 1;
+		_chkResult $__TEST_FAILS 1;
+		_chkResult $__ASSERT_PASSES 7
+		_chkResult $__ASSERT_FAILS 2
 
-		if $_SELFTESTOK; then 
+		if $__SELFTESTOK; then 
 			_green
 			_echoif
 			_echoif "nb: it is expected that some tests reported above will fail - this is *part of the self-test*"
