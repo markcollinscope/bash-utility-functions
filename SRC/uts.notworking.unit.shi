@@ -3,34 +3,44 @@
 ###
 # NB:
 # Search 'PUBLIC API' - to find the functions you use to write bash unit-tests.
-# all the early code is setup.
+# all the early code is set up related.
 ###
 
-set -u # TODO
+# nothing to do if no flag is supplied as first argument to this script directly, or the including script.
+__BU_SRC="$0"
+__BU_THISFILE="${BASH_SOURCE[0]}";
+
+dbg()	{ echo "$0: $@"; }
+
+if ! [[ "$1" = -* ]]; then
+	dbg first arg: $1
+	dbg "time to go"
+
+	test __BU_SRC = __BU_THISFILE && return 0; # TODO test this!
+	exit 0;
+fi
+
+dbg "main body"
 
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
 # regular expression definition - used find tests (using grep) client code needing testing.
-readonly BASH_UNIT_REGEX=${BASH_UNIT_REGEX:-'^.*function.*test.*()'}
+readonly BU_REGEX=${BU_REGEX:-'^.*function.*test.*()'};
 
 ### GLOBAL CONSTS.
 # self test related.
-readonly __BASHUNIT_SELF_TEST_FLAG="--self"
-readonly __BASHUNIT_VERBOSE_FLAG="--selfvb"
+readonly BU_SELF_TEST_FLAG=${BU_SELF_TEST_FLAG:-'--self'};
+readonly BU_VERBOSE_FLAG=${BU_VERBOSE_FLAG-'--selfvb'};
+readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 
 # testing bash scripts/functions realted.
-readonly __BASHUNIT_TEST_FLAG="--test";
+readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
+
+# TODO - Env Setup Stuff Above.
 
 ### SCRIPT GLOBAL VARS (BASH: 1 (or any non 0 value) - false, 0 - true - when returned from function).
-declare -g __BASHUNIT_FIRST_ARG=${1-}
+declare -g __BU_FIRST_ARG=${1-}
 
-###
-BASH_UNIT_SETUP=${BASH_UNIT_SETUP:-"tst.init"} #### TODO WHY?
-
-__SRC__="$0"
-
-# TODO - WHAT/WHY?
-setup=${setup:-"tst.setup"}
-teardown=${teardown:-"tst.teardown"}
+### START CODE ###
 
 _fn()
 {
@@ -40,11 +50,15 @@ _fn()
 	echo $fn
 }
 
+_bye() 
+{
+	_echoif "...terminating - have a wonderful day debugging!";
+}
+
 _help()
 {
 	>&2 echo "WRITE THE HELP SECTION!";
 }
-_help
 
 
 # set colors of output, push color to set,and pop to return to previous...
@@ -53,9 +67,9 @@ _addfirst() 	{ echo "$@"; }
 _echofirst() 	{ echo $1; }
 _setcolor()  	{ local cmd="tput setaf $1"; $cmd; $cmd >&2; }
 
-declare -g COLSTACK=7
-_pushcolor() 	{ local newcolor=$1; COLSTACK=$(_addfirst $newcolor $COLSTACK); _setcolor $newcolor; }
-_popcolor()		{ COLSTACK=$(_rmfirst $COLSTACK); local previous_color=$(_echofirst $COLSTACK); _setcolor $previous_color; }
+declare -g __BU_COLSTACK=7
+_pushcolor() 	{ local newcolor=$1; __BU_COLSTACK=$(_addfirst $newcolor $__BU_COLSTACK); _setcolor $newcolor; }
+_popcolor()		{ __BU_COLSTACK=$(_rmfirst $__BU_COLSTACK); local previous_color=$(_echofirst $__BU_COLSTACK); _setcolor $previous_color; }
 
 _red() 			{ _pushcolor 1; }
 _white() 		{ _pushcolor 7; }
@@ -63,37 +77,44 @@ _green() 		{ _pushcolor 2; }
 _yellow()		{ _pushcolor 3; }
 _unsetcolor()	{ _popcolor; }
 
-# use this function for echo-ing for user output - enables teh output to be switched off.
-declare -g __BASHUNIT_SILENT=1;
-_silent() 	{ return $__BASHUNIT_SILENT; }
-_echoif()	{ if ! _silent; then echo $*; fi; }
-_errif()	{ _echoif $* >&2; }
-
 # vebose output functions.
-declare -g __BASHUNIT_VERBOSE=1;
-_setVerbose() 		{ __BASHUNIT_VERBOSE=0; }
-_verbose() 			{ return $__BASHUNIT_VERBOSE; }
+declare -g __BU_VERBOSE=1;
+_setVerbose() 		{ __BU_VERBOSE=0; _vb 'verbose mode on'; }
+_verbose() 			{ return $__BU_VERBOSE; }
 _vb() 				{ if _verbose; then _yellow; >&2  _echoif "$@"; _unsetcolor; fi }
 
+# use this function for echo-ing for user output - enables teh output to be switched off.
+declare -g __BU_SILENT=1;
+_setSilent()	{ __BU_SILENT=0; }
+_silent() 		{ return $__BU_SILENT; }
+_echoif()		{ if ! _silent; then echo $*; fi; }
+_errif()		{ _echoif $* >&2; }
+
 # self test related.
-declare -g __BASHUNIT_SELFTEST=1;
-_setSelfTest() 	{ __BASHUNIT_SELFTEST__=0; }
-_selfTest() 	{ return $__BASHUNIT_SELFTEST; }
+declare -g __BU_SELF_TEST=1;
+_setSelfTest() 		{ __BU_SELF_TEST__=0; _vb 'self test mode on'; }
+_inSelfTestMode() 	{ return $__BU_SELF_TEST; }
+
+__BU_SRC=$0;
 
 # PARSE FOR BASH UNIT RUNTIME OPTIONS
-if test "$__BASHUNIT_FIRST_ARG" = "$__BASHUNIT_SELF_TEST_FLAG"; then
+if test "$__BU_FIRST_ARG" = "$BU_SELF_TEST_FLAG"; then
 	_setSelfTest;
 	shift;
-elif  test "$__BASHUNIT_FIRST_ARG" = $__BASHUNIT_VERBOSE_FLAG; then
+elif  test "$__BU_FIRST_ARG" = $BU_VERBOSE_FLAG; then
 	_setVerbose;
 	_setSelfTest;
 	shift;
-elif [[ $__BASHUNIT_FIRST_ARG == -* ]]; then
-	_errif "$0: help:"
+elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
+	_errif "help:"
+	_errif "-----"
 	_help;
-	_errif "$0: terminating... have a wickedly awesome day!"
+	_errif "-----"
 	exit 1;
 fi
+
+#
+_vb "$__BU_THISFILE: testing... use the <--help> option for more information";
 
 
 # finding and running unit tests.
@@ -101,7 +122,7 @@ _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
 
 _findTests()
 {
-	local tests=$(grep "$BASH_UNIT_REGEX" $__SRC__ | grep -v BASH_UNIT_REGEX | sed 's/().*//' | sed 's/function//'; );
+	local tests=$(grep "$BU_REGEX" $__BU_SRC | grep -v BU_REGEX | sed 's/().*//' | sed 's/function//'; );
     echo $tests
 }
 
@@ -130,10 +151,10 @@ _passFailAssert()
 ###### PUBLIC API - THE FOLLOWING FUNCTIONS ARE THOSE INTENDED FOR USE BY CLIENT CODE (USERS OF THIS FILE)
 
 # IS TESTING MODE ACTIVE?
-declare -g 	__BASHUNIT_TEST_ACTIVE=1;
+declare -g 	__BU_TEST_ACTIVE=1;
 function tst.active()
 {
-	return $__BASHUNIT_TEST_ACTIVE;
+	return $__BU_TEST_ACTIVE;
 }
 
 # ASSERT TWO VALUES ($1, $2) ARE THE SAME
@@ -194,7 +215,7 @@ function tst.assert()
 	
 	else
 		_errif
-		_errif "$0: no such option: $1 - testing fully aborted";
+		_errif "$__BU_SRC: no such option: $1 - testing fully aborted";
 		_errif
 		exit 1;
 	fi
@@ -250,7 +271,7 @@ function tst.run()
 	_vb "ABOUT TO RUN THE FOLLOWING TESTS: <$TESTS>";
 	_vb
 
-	_callifdefined $BASH_UNIT_SETUP;
+	_callifdefined tst.init
 
 	for test in $TESTS; do
 		__TEST_CNT=$((__TEST_CNT+1));
@@ -259,9 +280,9 @@ function tst.run()
 		_vb
 		_vb "TESTING FUNCTION <$test>"
 
-		_callifdefined $setup;
+		_callifdefined tst.setup
 		_callifdefined $test;
-		_callifdefined $teardown
+		_callifdefined tst.teardown
 
 		_vb
 		if $_THIS__TEST_PASSES; then
@@ -280,15 +301,34 @@ function tst.run()
 		_vb
 	done
 
-	if ! _selfTest; then tst.report; fi
+	if ! _inSelfTestMode; then tst.report; fi
 }
 
+function tst()
+{
+	local op=$1;
+	
+	# create delegate fn name.
+	local fn_delegate=$(_fn)\.$op;
 
+	if test "$(type -t $fn_delegate)" = "function"; then
+		shift;
+		_vb "$(_fn): about to delagate and call <$_fn_delegate $@>";
+		$fn_delegate "$@";
+	else
+		_errif "$(_fn): no function called <$fn_delegate> exists $(_bye)";
+		exit 1;
+	fi
+}
 
+_inSelfTestMode
+dbg "test mode: $?"
 # SELF TEST
-if _selfTest; then
+if _inSelfTestMode; then
 
-	# "Mock setup and tear down to check they are running correctly"
+	set -u # TODO
+
+	# "Mock set up and tear down to check they are running correctly"
 	function tst.init() 		{ tst.assert --same 1 1; }
 	function tst.setup() 		{ tst.assert --diff 222 999; }
 	function tst.teardown() 	{ tst.assert --same 100 100; }
@@ -298,7 +338,7 @@ if _selfTest; then
 
 	_vb
 	_vb '######'
-	_vb "SELF TEST OPTION SELECTED ON: <$__SRC__>"
+	_vb "SELF TEST OPTION SELECTED ON: <$__BU_SRC>"
 	_vb
 	
 	declare -g __SELFTESTOK=true;
