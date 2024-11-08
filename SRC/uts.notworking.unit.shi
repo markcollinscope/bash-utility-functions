@@ -114,8 +114,11 @@ elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
 fi
 
 #
-_vb "$__BU_THISFILE: testing... for help info run: $$__BU_THISFILE --help";
-
+_vb "$__BU_THISFILE: testing..." 
+_vb "for help info on the command line run:" 
+_vb
+_vb "$__BU_THISFILE --help";
+_vb
 
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
