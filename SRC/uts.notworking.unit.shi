@@ -10,17 +10,15 @@
 __BU_SRC="$0"
 __BU_THISFILE="${BASH_SOURCE[0]}";
 
-dbg()	{ echo "$0: $@"; }
+_dbg()			{ tput setaf 4; echo "$0: $@" >&2; tput setaf 7; }
+_exitif()		{ _dbg dbgexitreturn $1; if test $__BU_SRC = $__BU_THISFILE; then exit $1; fi; } # inline this TODO.
 
 if ! [[ "$1" = -* ]]; then
-	dbg first arg: $1
-	dbg "time to go"
+	_dbg exitreturn;
+	_exitif 1;
 
-	test __BU_SRC = __BU_THISFILE && return 0; # TODO test this!
-	exit 0;
+	return 0;
 fi
-
-dbg "main body"
 
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
 # regular expression definition - used find tests (using grep) client code needing testing.
@@ -30,6 +28,7 @@ readonly BU_REGEX=${BU_REGEX:-'^.*function.*test.*()'};
 # self test related.
 readonly BU_SELF_TEST_FLAG=${BU_SELF_TEST_FLAG:-'--self'};
 readonly BU_VERBOSE_FLAG=${BU_VERBOSE_FLAG-'--selfvb'};
+readonly BU_SILENT_FLAG=${BU_QUIET_FLAG-'--selfsilent'};
 readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 
 # testing bash scripts/functions realted.
@@ -42,18 +41,8 @@ declare -g __BU_FIRST_ARG=${1-}
 
 ### START CODE ###
 
-_fn()
-{
-	local level=${1:-1};
-	local fn="${FUNCNAME[$level]}"
-
-	echo $fn
-}
-
-_bye() 
-{
-	_echoif "...terminating - have a wonderful day debugging!";
-}
+_fn() 			{ local level=${1:-1}; local fn="${FUNCNAME[$level]}"; echo $fn; }
+_bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
 
 _help()
 {
@@ -65,9 +54,9 @@ _help()
 _rmfirst() 		{ shift; echo "$@"; }
 _addfirst() 	{ echo "$@"; }
 _echofirst() 	{ echo $1; }
-_setcolor()  	{ local cmd="tput setaf $1"; $cmd; $cmd >&2; }
+_setcolor()  	{ local cmd="tput setaf $1"; $cmd;  } # $cmd >&2;
 
-declare -g __BU_COLSTACK=7
+declare -g __BU_COLSTACK=7 # white.
 _pushcolor() 	{ local newcolor=$1; __BU_COLSTACK=$(_addfirst $newcolor $__BU_COLSTACK); _setcolor $newcolor; }
 _popcolor()		{ __BU_COLSTACK=$(_rmfirst $__BU_COLSTACK); local previous_color=$(_echofirst $__BU_COLSTACK); _setcolor $previous_color; }
 
@@ -75,6 +64,7 @@ _red() 			{ _pushcolor 1; }
 _white() 		{ _pushcolor 7; }
 _green() 		{ _pushcolor 2; }
 _yellow()		{ _pushcolor 3; }
+_blue()			{ _pushcolor 4; }
 _unsetcolor()	{ _popcolor; }
 
 # vebose output functions.
@@ -87,15 +77,15 @@ _vb() 				{ if _verbose; then _yellow; >&2  _echoif "$@"; _unsetcolor; fi }
 declare -g __BU_SILENT=1;
 _setSilent()	{ __BU_SILENT=0; }
 _silent() 		{ return $__BU_SILENT; }
-_echoif()		{ if ! _silent; then echo $*; fi; }
-_errif()		{ _echoif $* >&2; }
+
+_echoif()		{ if ! _silent; then echo -e "$@"; fi; }
+_errif()		{ _echoif "$@" >&2; }
 
 # self test related.
 declare -g __BU_SELF_TEST=1;
-_setSelfTest() 		{ __BU_SELF_TEST__=0; _vb 'self test mode on'; }
+_setSelfTest() 		{ __BU_SELF_TEST=0; _vb 'self test mode on'; }
 _inSelfTestMode() 	{ return $__BU_SELF_TEST; }
 
-__BU_SRC=$0;
 
 # PARSE FOR BASH UNIT RUNTIME OPTIONS
 if test "$__BU_FIRST_ARG" = "$BU_SELF_TEST_FLAG"; then
@@ -103,6 +93,10 @@ if test "$__BU_FIRST_ARG" = "$BU_SELF_TEST_FLAG"; then
 	shift;
 elif  test "$__BU_FIRST_ARG" = $BU_VERBOSE_FLAG; then
 	_setVerbose;
+	_setSelfTest;
+	shift;
+elif  test "$__BU_FIRST_ARG" = $BU_SILENT_FLAG; then
+	_setSilent;
 	_setSelfTest;
 	shift;
 elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
@@ -151,7 +145,7 @@ _passFailAssert()
 	fi
 }
 
-###### PUBLIC API - THE FOLLOWING FUNCTIONS ARE THOSE INTENDED FOR USE BY CLIENT CODE (USERS OF THIS FILE)
+###### PUBLIC API - THE FOLLOWING FUNCTIONS ARE THOSE INTENDED FOR USE BY CLIENT CODE (USERS OF THIS INCLUDED BASH FILE aka SOURCED SCRIPT)
 
 # IS TESTING MODE ACTIVE?
 declare -g 	__BU_TEST_ACTIVE=1;
@@ -220,7 +214,7 @@ function tst.assert()
 		_errif
 		_errif "$__BU_SRC: no such option: $1 - testing fully aborted";
 		_errif
-		exit 1;
+		_exitreturn 1;
 	fi
 }
 
@@ -234,7 +228,7 @@ function tst.report()
 		pass=true;	
 	fi
 
-	cat <<ENDCAT
+	local report="
 
 	Test Report
 	-----------
@@ -246,15 +240,12 @@ function tst.report()
 	TEST PASSES:                   $__TEST_PASSES
 	TEST FAILURES:                 $__TEST_FAILS
 	-----------
-ENDCAT
+	"
+	
+	_errif "$report"
 
 	if $pass; then _green; else _red; fi
-
-cat <<ENDCAT
-
-	($status_message)
-
-ENDCAT
+	_errif "($status_message)"
 	_unsetcolor;
 }
 
@@ -287,24 +278,21 @@ function tst.run()
 		_callifdefined $test;
 		_callifdefined tst.teardown
 
-		_vb
 		if $_THIS__TEST_PASSES; then
 			_green
-			_vb "**** $test -- Test Passed ****";
-			_vb
+			_vb "--- $test -- Test Passed ---";
 			_white
 			__TEST_PASSES=$((__TEST_PASSES+1));
 		else
 			_red
-			_vb "**** $test -- Test Failed ****";
-			_vb
+			_errif "--- $test -- Test Failed ---";
 			_white
 			__TEST_FAILS=$((__TEST_FAILS+1));
 		fi
 		_vb
 	done
 
-	if ! _inSelfTestMode; then tst.report; fi
+	if ! _inSelfTestMode; then tst.report; fi # EXIT STATUS TODO.
 }
 
 function tst()
@@ -324,9 +312,6 @@ function tst()
 	fi
 }
 
-_inSelfTestMode
-dbg "test mode: $?"
-# SELF TEST
 if _inSelfTestMode; then
 
 	set -u # TODO
@@ -336,8 +321,8 @@ if _inSelfTestMode; then
 	function tst.setup() 		{ tst.assert --diff 222 999; }
 	function tst.teardown() 	{ tst.assert --same 100 100; }
 
-	function test.mock_1()		{ tst.assert --same "1" "1"; tst.assert --diff "1" "0"; }
-	function test.mock_2()		{ tst.assert --same "1" "0"; tst.assert --diff "0" "0"; }
+	function self_test_mock_1()		{ tst.assert --same "1" "1"; tst.assert --diff "1" "0"; }
+	function self_test_mock_2()		{ tst.assert --same "1" "0"; tst.assert --diff "0" "0"; _vb; _vb "nb: this is expected to fail!"; _vb; }
 
 	_vb
 	_vb '######'
@@ -350,7 +335,7 @@ if _inSelfTestMode; then
 	{
 		if ! test "$1" = "$2"; then 
 			_vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
-			__SELFTESTOK=false;
+			__SELFTESTOK=false; 
 		fi
 	}
 
@@ -363,28 +348,28 @@ if _inSelfTestMode; then
 		_chkResult $__TEST_PASSES 1;
 		_chkResult $__TEST_FAILS 1;
 		_chkResult $__ASSERT_PASSES 7
-		_chkResult $__ASSERT_FAILS 2
+		_chkResult $__ASSERT_FAILS 22
 
 		if $__SELFTESTOK; then 
 			_green
 			_echoif
-			_echoif "nb: it is expected that some tests reported above will fail - this is *part of the self-test*"
-			_echoif "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
-			_echoif "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+			_echoif "nb: it is expected that some tests reported above will fail - this is ---part of the self-test---"
+			_echoif "--- SELF TEST PASSED ------ SELF TEST PASSED ------ SELF TEST PASSED ---"
+			_echoif "--- SELF TEST PASSED ------ SELF TEST PASSED ------ SELF TEST PASSED ---"
 			_unsetcolor;
-			_echoif "*** SELF TEST PASSED *** *** SELF TEST PASSED *** *** SELF TEST PASSED ***"
+			_echoif "--- SELF TEST PASSED ------ SELF TEST PASSED ------ SELF TEST PASSED ---"
 			_echoif
+			return 0;
 		else
 			_echoif
 			_red
 			_echoif
-			_echoif "!!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
+			_echoif "!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
 			_unsetcolor;
-			_echoif "!!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
+			_echoif "!!! FAILURE OF SELF TEST !!! (ASK FOR YOUR MONEY BACK!)";
+			return 1;
 		fi
 	}
 
 	_doSelfTest 2>&1 | more
-	_vb '######'
-
 fi
