@@ -7,21 +7,27 @@
 # NB:
 # Search 'PUBLIC API' - to find the functions you use to write bash unit-tests.
 # all the early code is set up related.
+# See the '_help' function (or run this file with --help as the argument) for info
+# on how to use this file to unit test scripts or functions in bash.
 ###
 
-# nothing to do if no flag is supplied as first argument to this script directly, or the including script.
 __BU_SRC="$0"
 __BU_THISFILE="${BASH_SOURCE[0]}";
 
-_dbg()			{ tput setaf 4; echo "$0: $@" >&2; tput setaf 7; }
 _exitif()		{ if test $__BU_SRC = $__BU_THISFILE; then exit $1; fi; }
 
+# don't waste time reading this file if it is not needed in an including file/script. exit/return to caller immediately.
+# nothing to do if no flag is supplied as first argument to this script directly, or the including script.
 if ! [[ "$1" = -* ]]; then
 	_exitif 1;
 	return 0;
 fi
 
+_dbg()			{ tput setaf 4; echo "$(_fn): $@" >&2; tput setaf 7; }
+
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
+# flag to indicate that test should be run on bash scripts/functions that use this file.
+readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
 # regular expression definition - used find tests (using grep) client code needing testing.
 readonly BU_REGEX=${BU_REGEX:-'^.*function.*test.*()'};
 
@@ -32,28 +38,59 @@ readonly BU_VERBOSE_FLAG=${BU_VERBOSE_FLAG-'--selfv'};
 readonly BU_SILENT_FLAG=${BU_QUIET_FLAG-'--selfq'};
 readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 
-# testing bash scripts/functions realted.
-readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
 
 ### SCRIPT GLOBAL VARS ARE PREFIXED WITH __BU
 declare -g __BU_FIRST_ARG=${1-}
 
 ### START CODE ###
-
 _fn() 			{ local level=${1:-1}; local fn="${FUNCNAME[$level]}"; echo $fn; }
 _bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
 
 _help()
 {
-	>&2 echo "WRITE THE HELP SECTION!";
-}
+	local helpinfo=$(cat <<EOCAT
 
+	See exmaple files for more information. TODO - URL.
+
+	Functions for use in client tests:
+
+		function tst.assert[] - make an assert during a test. this will be tracked. options: [--same|--diff]
+			- e.g. tst assert --diff 1 2
+
+		function tst.active[] - returns bash T/F [0/1] depending if cmd line flags have 'activated testing'
+			- e.g. if tst.active; then <do something test related>; fi
+
+		function tst.run[] - run the tests, if the test option has been chosen.
+			- e.g. tst active && tst run
+			- initiated test running, iff testing has been 'activated'
+
+		call convention:
+			- functions should be called  using the 'tst assert' style format [i.e. not dot<.> in the middle - for future compatibility]
+			- <tst assert --same \$x "hello world">
+
+	Optional functions:
+		- client code defines these; unit test uses them when running tests. if undefined, they are ignored.
+		- nb: the dot<.> must be present during function defintion.
+
+		tst.init[] - undefined. define this function and it will be called at the start of testing.
+		tst.setup[] - undefined. define this function and it will be called at the start each individual test being run.
+		tst.teardown[] - undefined. define this function and it will be called at the end each individual test being run.
+
+	Other function sysnopsis [client code does notuse these]:
+		see functions below, important functions are annotated with explanation in commennt # format.
+EOCAT 
+
+	);
+
+	rat $helpinfo >&2;
+	exit 0;
+}
 
 # set colors of output, push color to set,and pop to return to previous...
 _rmfirst() 		{ shift; echo "$@"; }
 _addfirst() 	{ echo "$@"; }
 _echofirst() 	{ echo $1; }
-_setcolor()  	{ local cmd="tput setaf $1"; $cmd;  } # $cmd >&2;
+_setcolor()  	{ tput setaf $1; } 
 
 declare -g __BU_COLSTACK=7 # white.
 _pushcolor() 	{ local newcolor=$1; __BU_COLSTACK=$(_addfirst $newcolor $__BU_COLSTACK); _setcolor $newcolor; }
