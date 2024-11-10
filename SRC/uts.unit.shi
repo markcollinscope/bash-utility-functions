@@ -49,6 +49,28 @@ _bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
 _help()
 {
 	local helpinfo=$(cat <<EOCAT
+	
+	How to use $0. Example:
+
+	--- script.sh ---
+	# ...
+	
+	source path/to/uts.unit.shi
+	# ... your code.
+	myfunction() { echo 'hello wonderful world'; }	
+	# ...
+	# ... your code ends.
+
+	# code below this if statement will be parsed by bash only if 'testing is active'
+	if ! tst active; then exit 0; fi
+		
+	function test.myfunction()
+	{
+		local result=$(myfunction);
+		tst assert --same "$result" 'hello wonderful world'
+		tst assert --diff "$result" 'goodbye, cruel universe'
+	}
+	--- end script
 
 	See exmaple files for more information. TODO - URL.
 
