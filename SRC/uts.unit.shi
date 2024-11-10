@@ -1,4 +1,5 @@
-# TODO: help function.
+# TODO: help function. Some vars without BU prefix (global). 
+# TODO: consider:  _vbred, _vbgreen. flags - retionalise, or good enough. 
 
 #!/bin/bash
 
@@ -34,7 +35,7 @@ readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 # testing bash scripts/functions realted.
 readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
 
-### SCRIPT GLOBAL VARS (BASH: 1 (or any non 0 value) - false, 0 - true - when returned from function).
+### SCRIPT GLOBAL VARS ARE PREFIXED WITH __BU
 declare -g __BU_FIRST_ARG=${1-}
 
 ### START CODE ###
@@ -123,20 +124,20 @@ declare -g __BU_THIS_TEST_PASSES;
 
 _passFailAssert()
 {
-	local ASSERTION_SUCCESS=$1;
+	local assertion_success=$1;
 	shift 1;
 
-	__ASSERT_COUNT=$((__ASSERT_COUNT+1))
+	__BU_ASSERT_COUNT=$((__BU_ASSERT_COUNT+1))
 
-	if $ASSERTION_SUCCESS; then
+	if $assertion_success; then
 		_green
 		_vb "assertion passed ("$@")";
-		__ASSERT_PASSES=$((__ASSERT_PASSES+1))
+		__BU_ASSERT_PASSES=$((__BU_ASSERT_PASSES+1))
 		_unsetcolor;
 	else 
 		_red
 		_vb "assertion failed("$@")";
-		__ASSERT_FAILS=$((__ASSERT_FAILS+1))
+		__BU_ASSERT_FAILS=$((__BU_ASSERT_FAILS+1))
 		__BU_THIS_TEST_PASSES=false;
 		_unsetcolor;
 	fi
@@ -188,7 +189,6 @@ function tst.assert() # make an assert during a test. this will be tracked. opti
 		tst.assertDiff "$@"
 	
 	else
-		_errif
 		_errif "$__BU_SRC: no such option: $1 - testing fully aborted";
 		_errif
 		_exitif 1;
@@ -201,8 +201,8 @@ function tst.report() # print a report of test run results.
 	local status_message="NB: TEST FAILURE(S) FOUND";
 	local pass=false;
 	
-	if test "$__ASSERT_FAILS" = "0"; then 
-		status_message="ALL TESTS PASSED"; 
+	if test "$__BU_ASSERT_FAILS" = "0"; then 
+		status_message="ALL tests_to_run PASSED"; 
 		pass=true;	
 	fi
 
@@ -210,13 +210,13 @@ function tst.report() # print a report of test run results.
 
 	Test Report
 	-----------
-	TOTAL ASSERTIONS:              $__ASSERT_COUNT
-	ASSERTION_SUCCESS:             $__ASSERT_PASSES
-	ASSERTION FAILURES:            $__ASSERT_FAILS
+	Total assertions:              $__BU_ASSERT_COUNT
+	Assertion_success:             $__BU_ASSERT_PASSES
+	Assertion failure:			   $__BU_ASSERT_FAILS
 	-----------
-	TOTAL TESTS:                   $__TEST_CNT
-	TEST PASSES:                   $__TEST_PASSES
-	TEST FAILURES:                 $__TEST_FAILS
+	Total tests:                   $__BU_TEST_COUNT
+	Test passes:                   $__BU_TEST_PASSES
+	Test failures:                 $__BU_TEST_FAILURES
 	-----------
 	"
 	
@@ -227,27 +227,27 @@ function tst.report() # print a report of test run results.
 	_unsetcolor;
 }
 
-declare -g __ASSERT_COUNT=0
-declare -g __ASSERT_PASSES=0
-declare -g __ASSERT_FAILS=0
+declare -g __BU_ASSERT_COUNT=0
+declare -g __BU_ASSERT_PASSES=0
+declare -g __BU_ASSERT_FAILS=0
 
-declare -g __TEST_PASSES=0;
-declare -g __TEST_FAILS=0;
-declare -g __TEST_CNT=0;
+declare -g __BU_TEST_PASSES=0;
+declare -g __BU_TEST_FAILURES=0;
+declare -g __BU_TEST_COUNT=0;
 
 function tst.run() # run a set of tests.
 {
-	local TESTS=$(_findTests);
+	local tests_to_run=$(_findTests);
 
 	_vb
-	_vb "tests to be run: <$TESTS>";
+	_vb "tests to be run: <$tests_to_run>";
 	_vb
 
 	_vb "calling if defined: tst.setup"
 	_callifdefined tst.init
 
-	for test in $TESTS; do
-		__TEST_CNT=$((__TEST_CNT+1));
+	for test in $tests_to_run; do
+		__BU_TEST_COUNT=$((__BU_TEST_COUNT+1));
 		__BU_THIS_TEST_PASSES=true;
 
 		_vb
@@ -263,12 +263,12 @@ function tst.run() # run a set of tests.
 			_green
 			_errif "$test: test passed";
 			_white
-			__TEST_PASSES=$((__TEST_PASSES+1));
+			__BU_TEST_PASSES=$((__BU_TEST_PASSES+1));
 		else
 			_red
 			_errif "$test: test failed";
 			_white
-			__TEST_FAILS=$((__TEST_FAILS+1));
+			__BU_TEST_FAILURES=$((__BU_TEST_FAILURES+1));
 		fi
 		_vb
 	done
@@ -307,13 +307,13 @@ if _inSelfTestMode; then
 	function self_test_mock_1()		{ tst.assert --same "1" "1"; tst.assert --diff "1" "0"; }
 	function self_test_mock_2()		{ tst.assert --same "1" "0"; _vb "nb: this is expected to fail!"; tst.assert --diff "0" "0"; _vb "nb: this is expected to fail!"; }
 
-	declare -g __SELFTESTOK=true;
+	declare -g __BU_SELF_TEST_OK=true;
 
 	_chkResult()
 	{
 		if ! test "$1" = "$2"; then 
 			_vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
-			__SELFTESTOK=false; 
+			__BU_SELF_TEST_OK=false; 
 		fi
 	}
 
@@ -322,13 +322,13 @@ if _inSelfTestMode; then
 		tst.run
 		tst.report
 
-		_chkResult $__TEST_CNT 2;
-		_chkResult $__TEST_PASSES 1;
-		_chkResult $__TEST_FAILS 1;
-		_chkResult $__ASSERT_PASSES 7
-		_chkResult $__ASSERT_FAILS 2
+		_chkResult $__BU_TEST_COUNT 2;
+		_chkResult $__BU_TEST_PASSES 1;
+		_chkResult $__BU_TEST_FAILURES 1;
+		_chkResult $__BU_ASSERT_PASSES 7
+		_chkResult $__BU_ASSERT_FAILS 2
 
-		if $__SELFTESTOK; then
+		if $__BU_SELF_TEST_OK; then
 			_green
 			_echoif
 			_echoif "nb: it is expected that some tests reported above will fail - this is ---part of the self-test---"
