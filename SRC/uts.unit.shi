@@ -1,7 +1,7 @@
-# TODO: help function. Some vars without BU prefix (global). 
-# TODO: consider:  _vbred, _vbgreen. flags - retionalise, or good enough. 
-
 #!/bin/bash
+
+# TODO: help function.
+# TODO: consider:  _vbred, _vbgreen. flags - retionalise, or good enough. 
 
 ###
 # NB:
@@ -147,7 +147,7 @@ _passFailAssert()
 
 # IS TESTING MODE ACTIVE?
 declare -g 	__BU_TEST_ACTIVE=1;
-function tst.active() # returns 0 (yes/true) if testing is active.
+function tst.active() # returns 0 (true) if testing is active.
 {
 	return $__BU_TEST_ACTIVE;
 }
@@ -322,11 +322,11 @@ if _inSelfTestMode; then
 		tst.run
 		tst.report
 
-		_chkResult $__BU_TEST_COUNT 2;
-		_chkResult $__BU_TEST_PASSES 1;
-		_chkResult $__BU_TEST_FAILURES 1;
-		_chkResult $__BU_ASSERT_PASSES 7
-		_chkResult $__BU_ASSERT_FAILS 2
+		_chkResult $__BU_TEST_COUNT 	2;
+		_chkResult $__BU_TEST_PASSES 	1;
+		_chkResult $__BU_TEST_FAILURES 	1;
+		_chkResult $__BU_ASSERT_PASSES 	7;
+		_chkResult $__BU_ASSERT_FAILS 	2;
 
 		if $__BU_SELF_TEST_OK; then
 			_green
