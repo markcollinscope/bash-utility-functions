@@ -11,45 +11,57 @@
 # on how to use this file to unit test scripts or functions in bash.
 ###
 
-__BU_SRC="$0"
-__BU_THISFILE="${BASH_SOURCE[0]}";
+readonly __BU_SRC="$0"
+readonly __BU_THISFILE="${BASH_SOURCE[0]}";
 
-_exitif()		{ if test $__BU_SRC = $__BU_THISFILE; then exit $1; fi; }
+### these functions must be active even if testing is not 'active' - see cmd line flag processing shortly.
+# IS TESTING MODE ACTIVE?
+declare -g 	__BU_TEST_ACTIVE=1;
+function tst.active() # is 'client code' testing active? i.e. test flag on cmd line.
+{
+	return $__BU_TEST_ACTIVE;
+}
 
-# don't waste time reading this file if it is not needed in an including file/script. exit/return to caller immediately.
-# nothing to do if no flag is supplied as first argument to this script directly, or the including script.
+# exit this bash include file asap if not required.
 if ! [[ "$1" = -* ]]; then
-	_exitif 1;
+	tst.exitif 1;
 	return 0;
 fi
 
-_dbg()			{ tput setaf 4; echo "$(_fn): $@" >&2; tput setaf 7; }
+_dbg()	{ tput setaf 4; echo "$(_fn): $@" >&2; tput setaf 7; }
 
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
-# flag to indicate that test should be run on bash scripts/functions that use this file.
-readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
 # regular expression definition - used find tests (using grep) client code needing testing.
 readonly BU_REGEX=${BU_REGEX:-'^.*function.*test.*()'};
 
-### GLOBAL CONSTS.
+### GLOBAL CONSTS. THESE CAN BE OVERRIDEN BY CLIENT CODE WITH ENV VARS.
+
 # self test related.
 readonly BU_SELF_TEST_FLAG=${BU_SELF_TEST_FLAG:-'--self'};
-readonly BU_VERBOSE_FLAG=${BU_VERBOSE_FLAG-'--selfv'};
-readonly BU_SILENT_FLAG=${BU_QUIET_FLAG-'--selfq'};
+readonly BU_SELF_TEST_VERBOSE_FLAG=${BU_SELF_TEST_VERBOSE_FLAG:-'--selfv'};
+readonly BU_SELF_TEST_SILENT_FLAG=${BU_SELF_TEST_SILENT_FLAG:-'--selfq'};
+
+# help info.
 readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 
+# client code test activation.
+readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
+readonly BU_TEST_VERBOSE_FLAG=${BU_TEST_VERBOSE_FLAG:-'--testv'};
+readonly BU_TEST_SILENT_FLAG=${BU_TEST_SILENT_FLAG:-'--testq'};
+
+
+function tst.exitif()	{ if test "$0" = "${BASH_SOURCE[0]}"; then exit $1; fi; } 
+# TBB TODO DOCCO.
+# TBD. THIS FN DOES NOT WORK IN ANOTHER WHERE THE OTHER IS SOURCED!
 
 ### SCRIPT GLOBAL VARS ARE PREFIXED WITH __BU
 declare -g __BU_FIRST_ARG=${1-}
 
 ### START CODE ###
 _fn() 			{ local level=${1:-1}; local fn="${FUNCNAME[$level]}"; echo $fn; }
-_bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
+_bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; } # tbd: rm? todo.
 
-_help()
-{
-	local helpinfo=$(cat <<EOCAT
-	
+readonly __BU_HELP_INFO=$(cat <<__BU_ENDOFHELP
 	How to use $0. Example:
 
 	--- script.sh ---
@@ -64,11 +76,11 @@ _help()
 	# code below this if statement will be parsed by bash only if 'testing is active'
 	if ! tst active; then exit 0; fi
 		
-	function test.myfunction()
+	function test.myfunction\(\)
 	{
-		local result=$(myfunction);
-		tst assert --same "$result" 'hello wonderful world'
-		tst assert --diff "$result" 'goodbye, cruel universe'
+		local result=\$(myfunction);
+		tst assert --same "\$result" 'hello wonderful world'
+		tst assert --diff "\$result" 'goodbye, cruel universe'
 	}
 	--- end script
 
@@ -100,13 +112,18 @@ _help()
 
 	Other function sysnopsis [client code does notuse these]:
 		see functions below, important functions are annotated with explanation in commennt # format.
-EOCAT 
 
-	);
+__BU_ENDOFHELP
+);
 
-	rat $helpinfo >&2;
+
+_help()
+{
+	cat $__BU_ENDOFHELP >&2;
 	exit 0;
 }
+
+_isthisfile() { test "$__BU_SRC" = "$__BU_THISFILE"; }
 
 # set colors of output, push color to set,and pop to return to previous...
 _rmfirst() 		{ shift; echo "$@"; }
@@ -144,31 +161,41 @@ declare -g __BU_SELF_TEST=1;
 _setSelfTest() 		{ __BU_SELF_TEST=0; _vb 'self test mode on'; }
 _inSelfTestMode() 	{ return $__BU_SELF_TEST; }
 
+# client test script related.
+_setTest() 			{ __BU_TEST_ACTIVE=0; }
 
 ### OPTION PARSING ###
 # PARSE FOR BASH UNIT RUNTIME OPTIONS
 if test "$__BU_FIRST_ARG" = "$BU_SELF_TEST_FLAG"; then
 	_setSelfTest;
 	shift;
-elif  test "$__BU_FIRST_ARG" = $BU_VERBOSE_FLAG; then
+elif  test "$__BU_FIRST_ARG" = $BU_SELF_TEST_VERBOSE_FLAG; then
 	_setVerbose;
 	_setSelfTest;
 	shift;
-elif  test "$__BU_FIRST_ARG" = $BU_SILENT_FLAG; then
+elif  test "$__BU_FIRST_ARG" = $BU_SELF_TEST_SILENT_FLAG; then
 	_setSilent;
 	_setSelfTest;
+	shift;
+elif  test "$__BU_FIRST_ARG" = $BU_TEST_FLAG; then
+	_setTest;
+	shift;
+elif  test "$__BU_FIRST_ARG" = $BU_TEST_VERBOSE_FLAG; then
+	_setVerbose;
+	_setTest;
+	shift;
+elif  test "$__BU_FIRST_ARG" = $BU_TEST_SILENT_FLAG; then
+	_setSilent;
+	_setTest;
 	shift;
 elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
 	_errif "help:"
 	_errif "-----"
 	_help;
 	_errif "-----"
-	_exitif 1;
+	tst.exitif 1;
 	return 1;
 fi
-
-#
-_vb "self testing $__BU_THISFILE - for help info on the command line run: $__BU_THISFILE --help";
 
 # finding and running unit tests.
 _callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
@@ -203,13 +230,6 @@ _passFailAssert()
 }
 
 ###### PUBLIC API - THE FOLLOWING FUNCTIONS ARE THOSE INTENDED FOR USE BY CLIENT CODE (USERS OF THIS INCLUDED BASH FILE aka SOURCED SCRIPT)
-
-# IS TESTING MODE ACTIVE?
-declare -g 	__BU_TEST_ACTIVE=1;
-function tst.active() # returns 0 (true) if testing is active.
-{
-	return $__BU_TEST_ACTIVE;
-}
 
 # ASSERT TWO VALUES ($1, $2) ARE THE SAME
 tst.assertSame()
@@ -250,7 +270,7 @@ function tst.assert() # make an assert during a test. this will be tracked. opti
 	else
 		_errif "$__BU_SRC: no such option: $1 - testing fully aborted";
 		_errif
-		_exitif 1;
+		tst.exitif 1;
 		return 1;
 	fi
 }
@@ -261,7 +281,7 @@ function tst.report() # print a report of test run results.
 	local pass=false;
 	
 	if test "$__BU_ASSERT_FAILS" = "0"; then 
-		status_message="ALL tests_to_run PASSED"; 
+		status_message="ALL TESTS PASSED"; 
 		pass=true;	
 	fi
 
@@ -270,8 +290,8 @@ function tst.report() # print a report of test run results.
 	Test Report
 	-----------
 	Total assertions:              $__BU_ASSERT_COUNT
-	Assertion_success:             $__BU_ASSERT_PASSES
-	Assertion failure:			   $__BU_ASSERT_FAILS
+	Assertion success:             $__BU_ASSERT_PASSES
+	Assertion fails:               $__BU_ASSERT_FAILS
 	-----------
 	Total tests:                   $__BU_TEST_COUNT
 	Test passes:                   $__BU_TEST_PASSES
@@ -282,7 +302,8 @@ function tst.report() # print a report of test run results.
 	_errif "$report"
 
 	if $pass; then _green; else _red; fi
-	_errif "($status_message)"
+	_errif "        ($status_message)"
+	_errif
 	_unsetcolor;
 }
 
@@ -300,22 +321,20 @@ function tst.run() # run a set of tests.
 
 	_vb
 	_vb "tests to be run: <$tests_to_run>";
-	_vb
-
+	_vb 
 	_vb "calling if defined: tst.setup"
 	_callifdefined tst.init
+	_vb
 
 	for test in $tests_to_run; do
 		__BU_TEST_COUNT=$((__BU_TEST_COUNT+1));
 		__BU_THIS_TEST_PASSES=true;
 
-		_vb
-		_vb "testing: <$test>"
-
-		_vb "calling if defined: tst.setup"
+		_vb "running test function: <$test>"
+		_vb "calling (if it is defined): tst.setup"
 		_callifdefined tst.setup
 		_callifdefined $test;
-		_vb "calling if defined: tst.teardown"
+		_vb "calling (if it is defined): tst.teardown"
 		_callifdefined tst.teardown
 
 		if $__BU_THIS_TEST_PASSES; then
@@ -344,16 +363,16 @@ function tst()
 
 	if test "$(type -t $fn_delegate)" = "function"; then
 		shift;
-		_vb "$(_fn): about to delagate and call <$_fn_delegate $@>";
+		# _vb "$(_fn): about to delagate and call <$_fn_delegate $@>";
 		$fn_delegate "$@";
 	else
 		_errif "$(_fn): no function called <$fn_delegate> exists $(_bye)";
-		_exitif 1;
+		tst.exitif 1;
 		return 1;
 	fi
 }
 
-if _inSelfTestMode; then
+if _inSelfTestMode && _isthisfile; then
 
 	# self test in bash 'strict' mode.
 	set -u;
@@ -396,22 +415,21 @@ if _inSelfTestMode; then
 			_unsetcolor;
 			_echoif "self test passed"
 			_echoif
-			_exitif 0;
+			tst.exitif 0;
 			return 0;
 		else
 			_echoif
 			_red;
-			_echoif "self test FAILED";
+			_echoif "self test FAILED - as for your money back!";
 			_unsetcolor;
 			_echoif "self test FAILED";
-			_exitif 1;
+			tst.exitif 1;
 			return 1;
-	
 		fi
 	}
 
 	_doSelfTest 2>&1 | more
 
-	_exitif ${PIPESTATUS[0]}
+	tst.exitif ${PIPESTATUS[0]}
 	return ${PIPESTATUS[0]}
 fi
