@@ -409,7 +409,7 @@ if _inSelfTestMode && _isthisfile; then
 		if $__BU_SELF_TEST_OK; then
 			_green
 			_echoif
-			_echoif "nb: it is expected that some tests reported above will fail - this is ---part of the self-test---"
+			_echoif "nb: it is expected that some tests reported above will fail - it is part of the self-test process"
 			_echoif "self test passed"
 			_echoif "self test passed"
 			_unsetcolor;

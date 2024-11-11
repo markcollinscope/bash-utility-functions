@@ -404,10 +404,10 @@ optset() # <name>
 _iseven() # tbd. move this.
 {
 	local num=$(arg $1);
-    return $((num % 2 != 0))
+    return $((num % 2 == 0))
 }
 
-optboolfwd() # <bvar> <bflag> [ ]<bvar> <bflag> ] ...
+optboolfwd() # <bvar> <bflag> [ <bvar> <bflag> ] ...
 {
 	local n=$#;
 
