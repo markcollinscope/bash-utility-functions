@@ -329,12 +329,13 @@ _processHelp()
 
 _svRem()
 {
-	local -n remsave=$(arg $1);
+	errecho "_svRem: <$@>"
 
-	local rem=$(arg $2)
+	local -n remsave=$(arg ${1-""});
+	local rem=$(arg ${2:-""});
 
-	if test "$rem" == "$__REMFLAG"; then
-		remsave=$(arg $3)
+	if test "$rem" = "$__REMFLAG"; then
+		remsave=$(arg ${3:-""});
 		return 0;
 	fi
 
@@ -347,18 +348,26 @@ function bopt() # <name>
 # see also boolopt.
 # nb: --rem cannot be used - todo.
 {
+	errecho "bopt: <$@>";
+
 	local remstring;
-	_svRem remstring "$@";
-	local remused=$?;
-	if test $remused; then shift 2; fi
+	local remused=false;
+	
+	_svRem remstring "$@" && { shift 2; remused=true; }
+
+	errecho "bopt: rem: $remused";
 
 	local flags=$(arg $1);
 	shift;
 
+	errecho "bopt: flags: $flags";	
+
 	local varname=$(_lastFlag $flags)
 	varname=$(optAsVar $varname);
 
-	if test $remused; then
+	errecho "bopt: varname: $varname";
+
+	if $remused; then
 		boolopt --rem "$remstring" $flags $varname "$@";
 	else
 		boolopt $flags $varname "$@";
@@ -371,17 +380,17 @@ function vopt() # <name>
 # nb: --rem cannot be used - todo.
 {
 	local remstring;
-	_svRem remstring "$@";
-	local remused=$?;
-	if test $remused; then shift 2; fi
+	local remused=false;
 
+	_svRem remstring "$@" && { shift 2; remused=true; }
+	
 	local flags=$(arg $1);
 	shift;
 
 	local varname=$(_lastFlag $flags);
 	varname=$(optAsVar $varname);
 
-	if test $remused; then
+	if $remused; then
 		valopt --rem "$remstring" $flags $varname "$@";
 	else
 		valopt $flags $varname "$@";
@@ -404,23 +413,27 @@ optset() # <name>
 _iseven() # tbd. move this.
 {
 	local num=$(arg $1);
-    return $((num % 2 == 0))
+	local remainder=$((num % 2));
+	errecho remainder: $remainder;
+	
+	return $(test $remainder = 0);
 }
 
-optboolfwd() # <bvar> <bflag> [ <bvar> <bflag> ] ...
+optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 {
 	local n=$#;
 
 	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
 
-	local i;
-	local res=
+	local res="";
 	for ((i=1; i<$n; i+=2)); do
 		local bflag=${!i};
 		local j=$((i+1))
 		local bval=${!j};
 
 		bflag=$(optAsFlag $bflag)
+		errecho "boolfwd: bflag: $bflag, res: $res,  bval: <$bval>";
+
 		if $bval; then res=$(concat -s $res $bflag); fi
 	done
 	echo $res;

@@ -65,6 +65,7 @@ dbg "UTS GLOBAL DEBUGGING ON"
 test "$(type -t uts.isincluded)" = "function" && return;
 
 ### 'real' functionality starts here ###
+HERE HERE included ALREADY source uts.global ... HERE
 
 false && uts.fileasvar()
 {
