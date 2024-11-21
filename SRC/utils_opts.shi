@@ -329,8 +329,6 @@ _processHelp()
 
 _svRem()
 {
-	errecho "_svRem: <$@>"
-
 	local -n remsave=$(arg ${1-""});
 	local rem=$(arg ${2:-""});
 
@@ -348,24 +346,16 @@ function bopt() # <name>
 # see also boolopt.
 # nb: --rem cannot be used - todo.
 {
-	errecho "bopt: <$@>";
-
 	local remstring;
 	local remused=false;
 	
 	_svRem remstring "$@" && { shift 2; remused=true; }
 
-	errecho "bopt: rem: $remused";
-
 	local flags=$(arg $1);
 	shift;
 
-	errecho "bopt: flags: $flags";	
-
 	local varname=$(_lastFlag $flags)
 	varname=$(optAsVar $varname);
-
-	errecho "bopt: varname: $varname";
 
 	if $remused; then
 		boolopt --rem "$remstring" $flags $varname "$@";
@@ -414,7 +404,6 @@ _iseven() # tbd. move this.
 {
 	local num=$(arg $1);
 	local remainder=$((num % 2));
-	errecho remainder: $remainder;
 	
 	return $(test $remainder = 0);
 }
@@ -432,7 +421,6 @@ optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 		local bval=${!j};
 
 		bflag=$(optAsFlag $bflag)
-		errecho "boolfwd: bflag: $bflag, res: $res,  bval: <$bval>";
 
 		if $bval; then res=$(concat -s $res $bflag); fi
 	done

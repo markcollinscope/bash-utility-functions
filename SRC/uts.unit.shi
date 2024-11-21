@@ -28,7 +28,7 @@ if ! [[ "$1" = -* ]]; then
 	return 0;
 fi
 
-_dbg()	{ tput setaf 4; echo "$(_fn): $@" >&2; tput setaf 7; }
+_dbg()	{ echo "$(_fn): $@" >&2; }
 
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
 # regular expression definition - used find tests (using grep) client code needing testing.
@@ -59,7 +59,7 @@ declare -g __BU_FIRST_ARG=${1-}
 
 ### START CODE ###
 _fn() 			{ local level=${1:-1}; local fn="${FUNCNAME[$level]}"; echo $fn; }
-_bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; } # tbd: rm? todo.
+_bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
 
 readonly __BU_HELP_INFO=$(cat <<__BU_ENDOFHELP
 	How to use $0. Example:
@@ -116,10 +116,11 @@ readonly __BU_HELP_INFO=$(cat <<__BU_ENDOFHELP
 __BU_ENDOFHELP
 );
 
-
 _help()
 {
+	_blue;
 	cat $__BU_ENDOFHELP >&2;
+	_white
 	exit 0;
 }
 
@@ -198,7 +199,7 @@ elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
 fi
 
 # finding and running unit tests.
-_callifdefined() { if test "$(type -t $1)" = "function" ; then "$@"; fi }
+_callifdefined() { if test "$(type -t $1)" = "function" ; then _vb "calling <$@>"; "$@"; fi }
 
 _findTests()
 {
@@ -222,7 +223,7 @@ _passFailAssert()
 		_unsetcolor;
 	else 
 		_red
-		_vb "assertion failed("$@")";
+		_errif "assertion failed("$@")";
 		__BU_ASSERT_FAILS=$((__BU_ASSERT_FAILS+1))
 		__BU_THIS_TEST_PASSES=false;
 		_unsetcolor;
@@ -319,10 +320,8 @@ function tst.run() # run a set of tests.
 {
 	local tests_to_run=$(_findTests);
 
-	_vb
 	_vb "tests to be run: <$tests_to_run>";
 	_vb 
-	_vb "calling if defined: tst.setup"
 	_callifdefined tst.init
 	_vb
 
@@ -331,10 +330,8 @@ function tst.run() # run a set of tests.
 		__BU_THIS_TEST_PASSES=true;
 
 		_vb "running test function: <$test>"
-		_vb "calling (if it is defined): tst.setup"
 		_callifdefined tst.setup
 		_callifdefined $test;
-		_vb "calling (if it is defined): tst.teardown"
 		_callifdefined tst.teardown
 
 		if $__BU_THIS_TEST_PASSES; then
