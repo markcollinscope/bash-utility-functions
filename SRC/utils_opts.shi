@@ -427,8 +427,6 @@ optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 	echo $res;
 }
 
-if ! null $USEBOPTFWD; then
-
 optbfwd() # # [<flagvar> ...]
 {
 	local flagvars="$@";
@@ -454,8 +452,6 @@ optvfwd() # # [<flagvar> ...]
 	done
 	if ! null "$res"; then optvalfwd $res; fi
 }
-
-fi
 
 optvalfwd() # <valflag> <valvar> 
 {
