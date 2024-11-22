@@ -427,6 +427,36 @@ optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 	echo $res;
 }
 
+if ! null $USEBOPTFWD; then
+
+optbfwd() # # [<flagvar> ...]
+{
+	local flagvars="$@";
+
+	local res;
+	for i in $flagvars; do
+		local bflag=$(optAsFlag $i);
+		local bval=${!i};
+		res=$(concat -s $res $bflag $bvar);
+	done
+	if ! null "$res"; then optboolfwd $res; fi
+}
+
+optvfwd() # # [<flagvar> ...]
+{
+	local flagvars="$@";
+
+	local res;
+	for i in $flagvars; do
+		local vflag=$(optAsFlag $i);
+		local vval=${!i};
+		res=$(concat -s $res $vflag $vvar);
+	done
+	if ! null "$res"; then optvalfwd $res; fi
+}
+
+fi
+
 optvalfwd() # <valflag> <valvar> 
 {
 	local vflag=$(arg $1);
