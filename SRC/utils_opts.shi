@@ -344,7 +344,7 @@ _svRem()
 function bopt() # <name>
 # short form boolean opt <name> forms both the flag and the var used to show value if set.
 # see also boolopt.
-# nb: --rem cannot be used - todo.
+# nb: --rem cannot be used - todo. CHECK TODO
 {
 	local remstring;
 	local remused=false;
@@ -367,7 +367,7 @@ function bopt() # <name>
 function vopt() # <name>
 # short form value opt -  <name> forms both the flag and the var used to show value if set.
 # see also valopt.
-# nb: --rem cannot be used - todo.
+# nb: --rem cannot be used - todo. CHECK TODO
 {
 	local remstring;
 	local remused=false;
@@ -408,8 +408,20 @@ _iseven() # tbd. move this.
 	return $(test $remainder = 0);
 }
 
-optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
+_checkbool()
 {
+	local val=$(arg $1);
+
+	if ! test $val = true && ! test $val = false; then 
+		errecho "$(fnname -l 2): bool value expected (true, false) - value given <$val> - bye!";
+		exiterr -k;
+	fi
+	return 0;
+}
+
+optboolfwd() # <bflag> <bval> [ <bflag> <bval> ] ...
+{
+	errecho optboolfwd "$@"
 	local n=$#;
 
 	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
@@ -422,6 +434,7 @@ optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 
 		bflag=$(optAsFlag $bflag)
 
+		_checkbool $bval;
 		if $bval; then res=$(concat -s $res $bflag); fi
 	done
 	echo $res;
@@ -435,27 +448,16 @@ optbfwd() # # [<flagvar> ...]
 	local res;
 	for i in $flagvars; do
 		local bflag=$(optAsFlag $i);
-		local bval=${!i};
+		local bvar=$(optAsVar $i);
+		local bval=${!bvar};
 		res=$(concat -s $res $bflag $bval);
 	done
 	if ! null "$res"; then optboolfwd $res; fi
 }
 
-optvfwd() # # [<flagvar> ...]
+optvalfwd() # <valflag> <valvar>  # TODO MULTI-OPT.
 {
-	local flagvars="$@";
-
-	local res;
-	for i in $flagvars; do
-		local vflag=$(optAsFlag $i);
-		local vval=${!i};
-		res=$(concat -s $res $vflag $vval);
-	done
-	if ! null "$res"; then optvalfwd $res; fi
-}
-
-optvalfwd() # <valflag> <valvar> 
-{
+	errecho optvalfwd "$@"
 	local vflag=$(arg $1);
 	vflag=$(optAsFlag $vflag);
 
@@ -469,6 +471,23 @@ optvalfwd() # <valflag> <valvar>
 
 	if ! test -z $vval; then res=$(concat -s "$res" $vflag $vval); fi
 	echo $res;
+}
+
+optvfwd() # # [<flagvar> ...]
+{
+	local flagvars="$@";
+
+	local res;
+	for i in $flagvars; do
+		local vflag=$(optAsFlag $i);
+		local vvar=$(optAsVar $i);
+		local vval=${!vvar};
+
+		if ! null "$vval"; then
+			res=$(concat -s $res $vflag $vval);
+		fi
+	done
+	if ! null "$res"; then optvalfwd $res; fi
 }
 
 errifopt() # "$@"
