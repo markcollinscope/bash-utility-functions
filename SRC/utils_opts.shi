@@ -427,6 +427,7 @@ optboolfwd() # <bflag> <bvar> [ <bflag> <bvar> ] ...
 	echo $res;
 }
 
+# this works --- fn() { local v=$1; fv="-$v"; vv=${!v}; echo "<$fv $vv>"; }
 optbfwd() # # [<flagvar> ...]
 {
 	local flagvars="$@";
@@ -435,7 +436,7 @@ optbfwd() # # [<flagvar> ...]
 	for i in $flagvars; do
 		local bflag=$(optAsFlag $i);
 		local bval=${!i};
-		res=$(concat -s $res $bflag $bvar);
+		res=$(concat -s $res $bflag $bval);
 	done
 	if ! null "$res"; then optboolfwd $res; fi
 }
@@ -448,7 +449,7 @@ optvfwd() # # [<flagvar> ...]
 	for i in $flagvars; do
 		local vflag=$(optAsFlag $i);
 		local vval=${!i};
-		res=$(concat -s $res $vflag $vvar);
+		res=$(concat -s $res $vflag $vval);
 	done
 	if ! null "$res"; then optvalfwd $res; fi
 }
