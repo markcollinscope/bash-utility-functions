@@ -408,7 +408,7 @@ _iseven() # tbd. move this.
 	return $(test $remainder = 0);
 }
 
-_checkbool()
+_assertbool()
 {
 	local val=$(arg $1);
 
@@ -419,28 +419,24 @@ _checkbool()
 	return 0;
 }
 
-optboolfwd() # <bflag> <bval> [ <bflag> <bval> ] ...
+optboolfwd() # <boolflag> <boolvar> [ <boolflag> <boolvar> ] ...
 {
-	errecho optboolfwd "$@"
 	local n=$#;
-
 	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
 
 	local res="";
 	for ((i=1; i<$n; i+=2)); do
-		local bflag=${!i};
+		local bflag=$(optAsFlag ${!i});
 		local j=$((i+1))
-		local bval=${!j};
+		local bvar=${!j};
+		local bval=${!bvar};
+		_assertbool $bval;
 
-		bflag=$(optAsFlag $bflag)
-
-		_checkbool $bval;
 		if $bval; then res=$(concat -s $res $bflag); fi
 	done
 	echo $res;
 }
 
-# this works --- fn() { local v=$1; fv="-$v"; vv=${!v}; echo "<$fv $vv>"; }
 optbfwd() # # [<flagvar> ...]
 {
 	local flagvars="$@";
@@ -449,27 +445,25 @@ optbfwd() # # [<flagvar> ...]
 	for i in $flagvars; do
 		local bflag=$(optAsFlag $i);
 		local bvar=$(optAsVar $i);
-		local bval=${!bvar};
-		res=$(concat -s $res $bflag $bval);
+		res=$(concat -s $res $bflag $bvar);
 	done
 	if ! null "$res"; then optboolfwd $res; fi
 }
 
-optvalfwd() # <valflag> <valvar>  # TODO MULTI-OPT.
+optvalfwd() # <valflag> <valvar>
 {
-	errecho optvalfwd "$@"
-	local vflag=$(arg $1);
-	vflag=$(optAsFlag $vflag);
+	local n=$#;
+	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
 
-	local vval=$2;
-	local res=$3;
+	local res="";
+	for ((i=1; i<$n; i+=2)); do
+		local vflag=$(optAsFlag ${!i});
+		local j=$((i+1))
+		local vvar=${!j};
+		local vval=${!vvar};
 
-	if ! test -z $res; then 
-		shift 2;
-		res="$@";
-	fi
-
-	if ! test -z $vval; then res=$(concat -s "$res" $vflag $vval); fi
+		if ! null "$vval"; then res=$(concat -s $res $vflag $vval); fi
+	done
 	echo $res;
 }
 
@@ -481,11 +475,7 @@ optvfwd() # # [<flagvar> ...]
 	for i in $flagvars; do
 		local vflag=$(optAsFlag $i);
 		local vvar=$(optAsVar $i);
-		local vval=${!vvar};
-
-		if ! null "$vval"; then
-			res=$(concat -s $res $vflag $vval);
-		fi
+		res=$(concat -s $res $vflag $vvar);
 	done
 	if ! null "$res"; then optvalfwd $res; fi
 }
