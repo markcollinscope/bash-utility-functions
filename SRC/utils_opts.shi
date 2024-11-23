@@ -430,6 +430,8 @@ optboolfwd() # <boolflag> <boolvar> [ <boolflag> <boolvar> ] ...
 		local j=$((i+1))
 		local bvar=${!j};
 		local bval=${!bvar};
+
+		if null $bval; then bval=false; fi # todo - review if null values should be allowed.
 		_assertbool $bval;
 
 		if $bval; then res=$(concat -s $res $bflag); fi
