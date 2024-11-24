@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TODO: help function.
-# TODO: consider:  _vbred, _vbgreen. flags - retionalise, or good enough. 
+# TODO: consider:  tst.vbred, tst.vbgreen. flags - retionalise, or good enough. 
 
 ###
 # NB:
@@ -32,7 +32,7 @@ if ! [[ "$1" = -* ]]; then
 	$(tst.exitreturn 0);
 fi
 
-_dbg()	{ echo "$(_fn): $@" >&2; }
+#_dbg()	{ echo "$(_fn): $@" >&2; }
 
 ### IMPORT FROM ENV - OR USE LOCAL DEFAULTS.
 # regular expression definition - used find tests (using grep) client code needing testing.
@@ -42,16 +42,16 @@ readonly BU_REGEX=${BU_REGEX:-'^.*function.*test.*()'};
 
 # self test related.
 readonly BU_SELF_TEST_FLAG=${BU_SELF_TEST_FLAG:-'--self'};
-readonly BU_SELF_TEST_VERBOSE_FLAG=${BU_SELF_TEST_VERBOSE_FLAG:-'--selfv'};
-readonly BU_SELF_TEST_SILENT_FLAG=${BU_SELF_TEST_SILENT_FLAG:-'--selfq'};
+readonly BU_SELF_TEST_VERBOSE_FLAG=${BU_SELF_TEST_VERBOSE_FLAG:-'--selfvb'};
+readonly BU_SELF_TEST_SILENT_FLAG=${BU_SELF_TEST_SILENT_FLAG:-'--selfsilent'};
 
 # help info.
 readonly BU_HELP_FLAG=${BU_HELP_FLAG-'--help'};
 
 # client code test activation.
 readonly BU_TEST_FLAG=${BU_TEST_FLAG:-'--test'};
-readonly BU_TEST_VERBOSE_FLAG=${BU_TEST_VERBOSE_FLAG:-'--testv'};
-readonly BU_TEST_SILENT_FLAG=${BU_TEST_SILENT_FLAG:-'--testq'};
+readonly BU_TEST_VERBOSE_FLAG=${BU_TEST_VERBOSE_FLAG:-'--testvb'};
+readonly BU_TEST_SILENT_FLAG=${BU_TEST_SILENT_FLAG:-'--testsilent'};
 
 
 function tst.exitif()	{ if test "$0" = "${BASH_SOURCE[0]}"; then exit $1; fi; } 
@@ -66,64 +66,14 @@ _fn() 			{ local level=${1:-1}; local fn="${FUNCNAME[$level]}"; echo $fn; }
 _bye() 			{ _echoif "...terminating - have a wonderful day debugging!"; }
 
 readonly __BU_HELP_INFO=$(cat <<__BU_ENDOFHELP
-	How to use $0. Example:
-
-	--- script.sh ---
-	# ...
-	
-	source path/to/uts.unit.shi
-	# ... your code.
-	myfunction() { echo 'hello wonderful world'; }	
-	# ...
-	# ... your code ends.
-
-	# code below this if statement will be parsed by bash only if 'testing is active'
-	if ! tst active; then exit 0; fi
-		
-	function test.myfunction\(\)
-	{
-		local result=\$(myfunction);
-		tst assert --same "\$result" 'hello wonderful world'
-		tst assert --diff "\$result" 'goodbye, cruel universe'
-	}
-	--- end script
-
-	See exmaple files for more information. TODO - URL.
-
-	Functions for use in client tests:
-
-		function tst.assert[] - make an assert during a test. this will be tracked. options: [--same|--diff]
-			- e.g. tst assert --diff 1 2
-
-		function tst.active[] - returns bash T/F [0/1] depending if cmd line flags have 'activated testing'
-			- e.g. if tst.active; then <do something test related>; fi
-
-		function tst.run[] - run the tests, if the test option has been chosen.
-			- e.g. tst active && tst run
-			- initiated test running, iff testing has been 'activated'
-
-		call convention:
-			- functions should be called  using the 'tst assert' style format [i.e. not dot<.> in the middle - for future compatibility]
-			- <tst assert --same \$x "hello world">
-
-	Optional functions:
-		- client code defines these; unit test uses them when running tests. if undefined, they are ignored.
-		- nb: the dot<.> must be present during function defintion.
-
-		tst.init[] - undefined. define this function and it will be called at the start of testing.
-		tst.setup[] - undefined. define this function and it will be called at the start each individual test being run.
-		tst.teardown[] - undefined. define this function and it will be called at the end each individual test being run.
-
-	Other function sysnopsis [client code does notuse these]:
-		see functions below, important functions are annotated with explanation in commennt # format.
-
+	todo: complete help section.
 __BU_ENDOFHELP
 );
 
 _help()
 {
 	_blue;
-	cat $__BU_ENDOFHELP >&2;
+	cat $__BU_HELP_INFO >&2;
 	_white
 	exit 0;
 }
@@ -145,13 +95,21 @@ _white() 		{ _pushcolor 7; }
 _green() 		{ _pushcolor 2; }
 _yellow()		{ _pushcolor 3; }
 _blue()			{ _pushcolor 4; }
-_unsetcolor()	{ _popcolor; }
+_resetcol()		{ _popcolor; }
 
 # vebose output functions.
 declare -g __BU_VERBOSE=1;
-_setVerbose() 		{ __BU_VERBOSE=0; _vb 'verbose mode on'; }
+_setVerbose() 		{ __BU_VERBOSE=0; tst.vb 'verbose mode on'; }
 _verbose() 			{ return $__BU_VERBOSE; }
-_vb() 				{ if _verbose; then _yellow; >&2  _echoif "$@"; _unsetcolor; fi }
+
+tst.vb() 				
+{ 
+	if _verbose; then 
+		_yellow; 
+		>&2  _echoif "$@"; 
+		_resetcol; 
+	fi 
+}
 
 # use this function for echo-ing for user output - enables the output to be switched off.
 declare -g __BU_SILENT=1;
@@ -163,7 +121,7 @@ _errif()		{ _echoif "$@" >&2; }
 
 # self test related.
 declare -g __BU_SELF_TEST=1;
-_setSelfTest() 		{ __BU_SELF_TEST=0; _vb 'self test mode on'; }
+_setSelfTest() 		{ __BU_SELF_TEST=0; tst.vb 'self test mode on'; }
 _inSelfTestMode() 	{ return $__BU_SELF_TEST; }
 
 # client test script related.
@@ -202,7 +160,7 @@ elif test "$__BU_FIRST_ARG" = $BU_HELP_FLAG; then
 fi
 
 # finding and running unit tests.
-_callifdefined() { if test "$(type -t $1)" = "function" ; then _vb "calling <$@>"; "$@"; fi }
+_callifdefined() { if test "$(type -t $1)" = "function" ; then tst.vb "calling <$@>"; "$@"; fi }
 
 _findTests()
 {
@@ -221,15 +179,15 @@ _passFailAssert()
 
 	if $assertion_success; then
 		_green
-		_vb "assertion passed ("$@")";
+		tst.vb "assertion passed ("$@")";
 		__BU_ASSERT_PASSES=$((__BU_ASSERT_PASSES+1))
-		_unsetcolor;
+		_resetcol;
 	else 
 		_red
 		_errif "assertion failed("$@")";
 		__BU_ASSERT_FAILS=$((__BU_ASSERT_FAILS+1))
 		__BU_THIS_TEST_PASSES=false;
-		_unsetcolor;
+		_resetcol;
 	fi
 }
 
@@ -307,7 +265,7 @@ function tst.report() # print a report of test run results.
 	if $pass; then _green; else _red; fi
 	_errif "        ($status_message)"
 	_errif
-	_unsetcolor;
+	_resetcol;
 }
 
 declare -g __BU_ASSERT_COUNT=0
@@ -322,16 +280,16 @@ function tst.run() # run a set of tests.
 {
 	local tests_to_run=$(_findTests);
 
-	_vb "tests to be run: <$tests_to_run>";
-	_vb 
+	tst.vb "tests to be run: <$tests_to_run>";
+	tst.vb 
 	_callifdefined tst.init
-	_vb
+	tst.vb
 
 	for test in $tests_to_run; do
 		__BU_TEST_COUNT=$((__BU_TEST_COUNT+1));
 		__BU_THIS_TEST_PASSES=true;
 
-		_vb "running test function: <$test>"
+		tst.vb "running test function: <$test>"
 		_callifdefined tst.setup
 		_callifdefined $test;
 		_callifdefined tst.teardown
@@ -347,7 +305,7 @@ function tst.run() # run a set of tests.
 			_white
 			__BU_TEST_FAILURES=$((__BU_TEST_FAILURES+1));
 		fi
-		_vb
+		tst.vb
 	done
 
 	if ! _inSelfTestMode; then tst.report; fi
@@ -362,7 +320,7 @@ function tst()
 
 	if test "$(type -t $fn_delegate)" = "function"; then
 		shift;
-		# _vb "$(_fn): about to delagate and call <$_fn_delegate $@>";
+		# tst.vb "$(_fn): about to delagate and call <$_fn_delegate $@>";
 		$fn_delegate "$@";
 	else
 		_errif "$(_fn): no function called <$fn_delegate> exists $(_bye)";
@@ -381,14 +339,14 @@ if _inSelfTestMode && _isthisfile; then
 	function tst.teardown() 	{ tst.assert --same 100 100; }
 
 	function self_test_mock_1()		{ tst.assert --same "1" "1"; tst.assert --diff "1" "0"; }
-	function self_test_mock_2()		{ tst.assert --same "1" "0"; _vb "nb: this is expected to fail!"; tst.assert --diff "0" "0"; _vb "nb: this is expected to fail!"; }
+	function self_test_mock_2()		{ tst.assert --same "1" "0"; tst.vb "nb: this is expected to fail!"; tst.assert --diff "0" "0"; tst.vb "nb: this is expected to fail!"; }
 
 	declare -g __BU_SELF_TEST_OK=true;
 
 	_chkResult()
 	{
 		if ! test "$1" = "$2"; then 
-			_vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
+			tst.vb "SELF TEST FAILED [<$1> vs <$2>] [SELF-TEST EXPECTS THE TWO VALUES TO BE THE SAME]";
 			__BU_SELF_TEST_OK=false; 
 		fi
 	}
@@ -410,7 +368,7 @@ if _inSelfTestMode && _isthisfile; then
 			_echoif "nb: it is expected that some tests reported above will fail - it is part of the self-test process"
 			_echoif "self test passed"
 			_echoif "self test passed"
-			_unsetcolor;
+			_resetcol;
 			_echoif "self test passed"
 			_echoif
 			$(tst.exitreturn 0);
@@ -418,7 +376,7 @@ if _inSelfTestMode && _isthisfile; then
 			_echoif
 			_red;
 			_echoif "self test FAILED - as for your money back!";
-			_unsetcolor;
+			_resetcol;
 			_echoif "self test FAILED";
 			$(tst.exitreturn 1);
 		fi
