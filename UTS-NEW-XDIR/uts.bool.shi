@@ -36,8 +36,8 @@ assert()
 {
     eval "$@";
     ! $? && {
-         uts.err "assert fail <$@> calling function <${FUNCNAME[1]}>"; 
-        uts.abort 1;
+        uts.err "assert fail <$@> call stack: <${FUNCNAME[1]}> <${FUNCNAME[2]}> <${FUNCNAME[3]}>"; 
+        uts.abort;
     }
 }
 
