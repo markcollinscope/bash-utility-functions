@@ -1,8 +1,8 @@
 #!/bin/bash
 
-_UTILS="utils_core.shi utils_map.shi utils_uio.shi utils_fd.shi utils_msc.shi utils_opts.shi utils_vb.shi utils_git.shi utils_pvar.shi" 
+_UTILS="utils_core.shi utils_map.shi utils_uio.shi utils_fd.shi utils_msc.shi utils_opts.shi utils_vb.shi utils_git.shi utils_pvar.shi utils_fuz.shi" 
 
-# current dependencies: Mon 28 Feb 01:44:10 GMT 2022
+# current dependencies: Mon 28 Feb 01:44:10 GMT 2022 - TODO - UPDATE!
 #
 # globals (none)
 # 
@@ -16,6 +16,7 @@ _UTILS="utils_core.shi utils_map.shi utils_uio.shi utils_fd.shi utils_msc.shi ut
 # vb: opts -> msc -> fd + globals, core
 # git: vb -> opts -> msc -> fd + globals, core
 # pvar: vb -> opts -> msc -> fd + globals, core
+# fuz: vb -> unit + globals, core.
 
 
 for i in $_UTILS; do
