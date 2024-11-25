@@ -1,0 +1,108 @@
+#!/bin/bash
+
+if true; then
+
+uts.in()
+{
+    local val=$(val $1);
+    shift;
+    local vals=$(vals "$@");
+
+    for i in $vals; do
+        if test $i = $val; then
+            return 0;
+        fi
+    done
+    return 1;
+}
+
+uts.err()
+{
+    >&2 echo $*;
+}
+
+uts.yield()
+{
+    echo $*;
+}
+
+uts.abort()
+{
+    local exitcode=${1:-1};
+    exit $exitcode;
+}
+
+assert()
+{
+    eval "$@";
+    ! $? && {
+         uts.err "assert fail <$@> calling function <${FUNCNAME[1]}>"; 
+        uts.abort 1;
+    }
+}
+
+val() 
+{ 
+    assert ! null "$@"; 
+    uts.yield $*; 
+}
+
+vals() 
+{ 
+    assert ! null "$@"; 
+    uts.yield $*; 
+}
+
+enum()
+{
+    local name=$(val $1);
+    shift;
+    local values=$(vals "$@");
+}
+
+null()
+{
+    test -z "$@";
+}
+
+opt.is()
+{
+    local opt=$(val $1);
+    local cmp=$(val $2);
+    test $opt = $cmp;
+}
+
+fi
+
+bool.assert()
+{
+    local val=$(val $1);
+    assert uts.in $val $(bool);
+}
+
+bool.is()
+{
+    local val=$(val $1);
+    uts.in $val $(bool);
+}
+
+bool.from()
+{
+    local val=$(val $1);
+    test $val = 0 && return true;
+    return false;
+}
+
+bool.as()
+{
+    local val=$(val $1);
+    bool.assert $val;
+
+    test $val = "true";
+}
+
+bool()
+{
+    echo true false;
+}
+gti
