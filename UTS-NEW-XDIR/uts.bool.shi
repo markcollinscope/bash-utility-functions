@@ -105,4 +105,5 @@ bool()
 {
     echo true false;
 }
-gti
+
+
