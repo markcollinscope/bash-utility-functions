@@ -2,12 +2,29 @@
 
 if true; then
 
+sd.rm()
+{
+	local rmval=$(val $1); shift;
+	local target=$(vals "$@")
+	sed "s/$rmval//g" <<< $target
+}
+
+sd.in()
+{
+    local val=$(val $1); shift;
+    local target=$(vals "$@");
+
+	local rmtarget=$(sd.rm $val $target);
+	! test "$rmtarget" = "$target"
+}
+
 uts.in()
 {
     local val=$(val $1);
     shift;
     local vals=$(vals "$@");
 
+	# optimise
     for i in $vals; do
         if test $i = $val; then
             return 0;
@@ -16,9 +33,31 @@ uts.in()
     return 1;
 }
 
+int()
+{
+	echo $*;
+}
+
+uts.out()
+{
+	if advanced; then
+	local channel=1;
+	local opt=$(int ${1-notanoption});
+	local optchannel=$(int ${2-$channel});
+
+	opt.is '--channel' $opt && {
+		channel=$optchannel;
+		shift 2;
+	}
+	>&$channel printf "$@";
+	else
+	printf "$@";
+	fi
+}
+
 uts.err()
 {
-    >&2 echo $*;
+    >&2 .out --channel 2 $*;
 }
 
 uts.yield()
@@ -26,9 +65,16 @@ uts.yield()
     echo $*;
 }
 
+rxstatus()
+{
+	# int < 256;
+	echo $*;
+}
+
 uts.abort()
 {
-    local exitcode=${1:-1};
+	local exitcode=$(rxstatus ${1:-1});
+	uts.err "Exiting with code %d\n" $exitcode;
     exit $exitcode;
 }
 
@@ -36,9 +82,14 @@ assert()
 {
     eval "$@";
     ! $? && {
-        uts.err "assert fail <$@> call stack: <${FUNCNAME[1]}> <${FUNCNAME[2]}> <${FUNCNAME[3]}>"; 
+		uts.err "assert fail (assering <$@>)call stack: <${FUNCNAME[1]}> <${FUNCNAME[2]}> <${FUNCNAME[3]}>"; 
         uts.abort;
     }
+}
+
+word()
+{
+	echo 'what?'
 }
 
 val() 
@@ -60,10 +111,12 @@ enum()
     local values=$(vals "$@");
 }
 
-null()
+uts.null()
 {
     test -z "$@";
 }
+
+null() { uts.null "$@"; }
 
 opt.is()
 {
@@ -74,36 +127,44 @@ opt.is()
 
 fi
 
-bool.assert()
+enum.assert() # is this different from $(bool $1);
 {
-    local val=$(val $1);
-    assert uts.in $val $(bool);
+	local val=$(val $1); shift;
+    local enumvals=$(vals "$@");
+
+    assert uts.in $val $enumvals;
 }
 
 bool.is()
 {
-    local val=$(val $1);
+    local val=$(bool $1);
     uts.in $val $(bool);
 }
 
 bool.from()
 {
-    local val=$(val $1);
-    test $val = 0 && return true;
+    local bval=$(bool $1);
+    test $bval && return true;
     return false;
 }
 
 bool.as()
 {
-    local val=$(val $1);
-    bool.assert $val;
+    local bval=$(bool $1);
 
-    test $val = "true";
+    test $bval = "true";
+}
+
+bool.enum()
+{
+	uts.yield "true false";
 }
 
 bool()
 {
-    echo true false;
+	# ... process other fns.
+	local bval=$(val $1);
+	enum.assert $(bool.enum);
+	uts.yield $bval;
 }
-
 

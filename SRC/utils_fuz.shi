@@ -55,7 +55,8 @@ fuz_many_files_err() # <[file ...]]>
 	exiterr -k;
 }
 
-fuz_zero_files_err()
+fuz_zero_files_err() # no args.
+# print error message when too many files matched.
 {
 	local str=$(arg $1);
 
