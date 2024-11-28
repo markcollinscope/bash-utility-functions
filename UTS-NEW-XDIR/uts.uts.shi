@@ -1,96 +1,37 @@
-#/bin/bash
+# #!/bin/bash
 
-### Guard against multiple inclusion.
-# if 'special function' already define, go home."
+# TODO: synposis of this file.
 
-if true; then
- BLACK="\e[30m"
- RED="\e[31m"		
- LIGHTRED="\e[91m"	
- GREEN="\e[32m"		
- YELLOW="\e[33m"
- BLUE="\e[34m"
- MAGENTA="\e[35m"
- CYAN="\e[36m"
- WHITE="\e[37m"
- NORMAL="\e[0m"
- RESET=$NORMAL
+# we all have to debug...
+dbg() { >&2 echo $*; }
 
-isTerminalOutput() 
-# if the current output stream (1, 2 ...) is to a terminal return true (0), else false (1)
-{
-	return 0;
-}
+# enable exit/return from this file.  from 
+# - if this file is the main controllling script (i.e. $0)		  - do: exit
+# - if this file is sourced in another script (i.e it is not $0)  - do: return
+# bash forbids return from a main script.
+exitreturn() { echo 'eval if test $0 = ${BASH_SOURCE[0]}; then exit; else return; fi'; }
+isfn() { test "$(type -t $1)" = "function"; }
 
-setcol() # <color code>
-# set text color - see VT100 color codes in this file. 
-# color code values include: BLACK RED LIGHTRED GREEN YELLOW BLUE MAGENTA CYAN WHITE NORMAL RESET (both WHITE).
-# precede color code with $ (e.g. $BLACK).
-{
-	local COLOR=$1; 
-	if $UTS_NOCOLOR; then return 0; fi
-
-	if isTerminalOutput; then echo -n -e $COLOR; fi
-	if isTerminalOutput 2; then >&2 echo -n -e $COLOR; fi
-
-	return 0;
-}
-setcolnorm() 
-# reset text color to 'normal'. 
-{
-	setcol $NORMAL
-}
-resetcol() 
-# reset text color to 'normal'. 
-{ 	
-	setcolnorm; 
-} 
-
-red() { setcol $RED; }
-normal() { resetcol; }
-
-fi
-
-dbguts() { return 1; }
-
-dbguts && incfiles() 
-{ echo -n "DBG: incfiles: 0: <${BASH_SOURCE[0]}> <1:${BASH_SOURCE[1]}> 2: <${BASH_SOURCE[2]}> Script: <$0>: " >&2; }
-dbg() { dbguts && incfiles && red && echo $* >&2 && normal; }
-dbgf() { dbguts && dbg "INFILE: <$1>"; }
-
-dbg "UTS GLOBAL DEBUGGING ON"
-
-# return from this file itself (as it is included using the bash 'source'/'.' command) has already been included.
-
-test "$(type -t uts.isincluded)" = "function" && return;
+### return as the code below has already been evaluated ###
+isfn uts.isincluded && $(exitreturn);
 
 ### 'real' functionality starts here ###
-HERE HERE included ALREADY source uts.global ... HERE
-
-false && uts.fileasvar()
-{
-	local name=$(basename $1);
-	name=$(sed 's/\./_/g' <<< $name);
-	name=___$name;
-	echo $name;
-}
 
 function uts.isincluded()
 {
-	dbg "INFILE: uts.uts.shi INFN: uts.isincluded"
-
 	local file=$1;
-	local name=$(basename $file);
+
+	declare -g name=$(basename $file);
 	name=$(sed 's/\./_/g' <<< $name);
 	name=___$name;
 
 	local -n refglobalvar=$name;
 
-	dbg "refglobalvar: $refglobalvar --" >&2;
-
-	! test -z "$refglobalvar" && return 0;
-
-	refglobalvar=included
-	return 1;
+	if ! test -z "$refglobalvar"; then
+		refglobalvar=included
+		return 1;
+	fi
+	return 0;
 }
+
 
