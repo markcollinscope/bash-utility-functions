@@ -1,0 +1,44 @@
+#!/bin/bash
+
+source uts.uts.shi
+$(uts.once);
+
+uts.val()
+{
+	echo $*;
+}
+
+uts.isint()
+{
+	local val=$(uts.val $1);
+
+	local intregx="^[0-9]*$"	
+	local sedval=$(sed "s/$intregx//" <<< $val);
+
+	! test $val = "$sedval";
+}
+
+rxcode.is()
+{
+	local val=$(uts.val $1);
+	uts.isint $val && $((val >= 0)) && $((val < 256));
+}
+
+rxcode.assert()
+{
+	local val=$(val $1);
+	uts.assert rxcode.is $val;
+}
+
+rxcode.init()
+{
+	local val=$(val $1);
+	assert rxcode.is $val;
+	uts.yield $val;
+}
+
+rxcode()
+{
+	echo $1;
+}
+

@@ -1,0 +1,78 @@
+#!/bin/bash
+
+source uts.uts.shi;
+$(uts.once);
+
+uts.out()
+{
+	printf "$@";
+}
+
+uts.err()
+{
+	>&2 uts.out $*;
+}
+
+uts.null() { if test -z "$*"; then return 0; else return 1; fi }; 
+
+uts.script() 
+{ 
+    if ! uts.null $0; then
+	    uts.out $(basename $0);
+    else 
+        uts.out "bash-cmd-line";
+    fi
+}; 	
+
+uts.abort()
+{
+	local exitcode=${1:-1};
+	uts.err "$(uts.script) - $(uts.fn) - terminating with error code %d\n" $exitcode;
+    exit $exitcode;
+}
+
+uts.nerr() 
+{ 
+	2>/dev/null "$@"; 
+}	
+
+uts.nout() 
+{ 
+	>/dev/null "$@"; 
+}		
+ 
+uts.none()
+{
+	uts.no uts.ne "$@";
+}
+
+uts.yield()
+{
+	uts.out $*;
+}
+
+uts.fn()
+{
+	local level=${1-0};
+	uts.yield ${FUNCNAME[$level]};
+}
+
+uts.caller()
+{
+	uts.fn 2;
+}
+
+uts.val()
+{
+	local val=$1
+	local caller=$(uts.caller);
+	uts.null $val && uts.err "$(uts.caller)::: null value passed to <$(uts.fn)>" && uts.abort;
+
+	uts.yield $val;
+}
+
+uts.val 
+
+
+null() { uts.null $*; }
+

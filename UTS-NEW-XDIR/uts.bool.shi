@@ -1,5 +1,8 @@
 #!/bin/bash
 
+source uts.uts.shi
+$(uts.once)
+
 if true; then
 
 sd.rm()
@@ -38,26 +41,15 @@ int()
 	echo $*;
 }
 
-uts.out()
+uts.mkfn()
 {
-	if advanced; then
-	local channel=1;
-	local opt=$(int ${1-notanoption});
-	local optchannel=$(int ${2-$channel});
-
-	opt.is '--channel' $opt && {
-		channel=$optchannel;
-		shift 2;
-	}
-	>&$channel printf "$@";
-	else
-	printf "$@";
-	fi
+	local prefix=$(val $;)
 }
+
 
 uts.err()
 {
-    >&2 .out --channel 2 $*;
+    uts.out --channel 2 $*;
 }
 
 uts.yield()
@@ -65,18 +57,13 @@ uts.yield()
     echo $*;
 }
 
-rxstatus()
+rxcode()
 {
 	# int < 256;
 	echo $*;
 }
 
-uts.abort()
-{
-	local exitcode=$(rxstatus ${1:-1});
-	uts.err "Exiting with code %d\n" $exitcode;
-    exit $exitcode;
-}
+
 
 assert()
 {
@@ -127,7 +114,7 @@ opt.is()
 
 fi
 
-enum.assert() # is this different from $(bool $1);
+enum.assert()
 {
 	local val=$(val $1); shift;
     local enumvals=$(vals "$@");
@@ -151,7 +138,6 @@ bool.from()
 bool.as()
 {
     local bval=$(bool $1);
-
     test $bval = "true";
 }
 
@@ -160,8 +146,18 @@ bool.enum()
 	uts.yield "true false";
 }
 
+bool.init()
+{
+	local v=$(val $1);
+	if $(rxcode.is $v); then
+		if $((v == 0)); then v=true; else v=false; fi
+	fi
+	enum.assert $v $(bool.enum);
+}
+
 bool()
 {
+	local op=$(val $1)
 	# ... process other fns.
 	local bval=$(val $1);
 	enum.assert $(bool.enum);
