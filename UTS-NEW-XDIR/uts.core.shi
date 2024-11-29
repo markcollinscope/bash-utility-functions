@@ -10,7 +10,7 @@ uts.out()
 
 uts.err()
 {
-	>&2 uts.out $*;
+	>&2 uts.out "$@";
 }
 
 uts.null() { if test -z "$*"; then return 0; else return 1; fi }; 
@@ -18,16 +18,16 @@ uts.null() { if test -z "$*"; then return 0; else return 1; fi };
 uts.script() 
 { 
     if ! uts.null $0; then
-	    uts.out $(basename $0);
+	    uts.yield $(basename $0);
     else 
-        uts.out "bash-cmd-line";
+        uts.yield "bash-cmd-line";
     fi
 }; 	
 
 uts.abort()
 {
 	local exitcode=${1:-1};
-	uts.err "$(uts.script) - $(uts.fn) - terminating with error code %d\n" $exitcode;
+	uts.err "terminating with error code %d\n" $exitcode;
     exit $exitcode;
 }
 
@@ -53,26 +53,30 @@ uts.yield()
 
 uts.fn()
 {
-	local level=${1-0};
+	local level=${1-1};
 	uts.yield ${FUNCNAME[$level]};
 }
 
 uts.caller()
 {
-	uts.fn 2;
+	uts.yield ${FUNCNAME[2]}
+}
+
+uts.lineno()
+{
+	;; # TBD.
 }
 
 uts.val()
 {
 	local val=$1
 	local caller=$(uts.caller);
-	uts.null $val && uts.err "$(uts.caller)::: null value passed to <$(uts.fn)>" && uts.abort;
+	uts.null $val && uts.err "$(uts.caller): null value passed to <$(uts.fn)>\n" && uts.abort;
 
 	uts.yield $val;
 }
 
 uts.val 
 
-
-null() { uts.null $*; }
+null() { uts.null $*; } # mv to global no prefix functions.
 
