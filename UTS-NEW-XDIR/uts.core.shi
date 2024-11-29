@@ -1,7 +1,8 @@
 #!/bin/bash
 
 source uts.uts.shi;
-$(uts.once);
+
+$(uts.return_if_already_processed);
 
 uts.out()
 {
@@ -13,7 +14,7 @@ uts.err()
 	>&2 uts.out "$@";
 }
 
-uts.stack() { local cnt=0;  while ! test -z ${FUNCNAME[$cnt]}; do uts.yield "%s--" ${FUNCNAME[$cnt]}; cnt=$((cnt + 1)); done; }
+uts.stack() { local cnt=1;  while ! test -z ${FUNCNAME[$cnt]}; do uts.yield "%s..." ${FUNCNAME[$cnt]}; cnt=$((cnt + 1)); done; }
 
 uts.null() { if test -z "$*"; then return 0; else return 1; fi }; 
 
@@ -53,6 +54,8 @@ uts.yield()
 {
 	uts.out $*;
 }
+
+uts.thisfile() { uts.yield ${BASH_SOURCE[0]}; }
 
 uts.fn()
 {

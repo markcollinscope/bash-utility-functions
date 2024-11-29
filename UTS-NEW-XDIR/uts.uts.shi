@@ -33,5 +33,5 @@ function uts.sourced()
 	return 0;
 }
 
-function uts.once() { echo 'eval uts.sourced ${BASH_SOURCE[0]} && $(uts.exitreturn)'; }
+function uts.return_if_already_processed() { echo 'eval uts.sourced ${BASH_SOURCE[0]} && $(uts.exitreturn)'; }
 
