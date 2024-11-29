@@ -13,6 +13,8 @@ uts.err()
 	>&2 uts.out "$@";
 }
 
+uts.stack() { local cnt=0;  while ! test -z ${FUNCNAME[$cnt]}; do uts.yield "%s--" ${FUNCNAME[$cnt]}; cnt=$((cnt + 1)); done; }
+
 uts.null() { if test -z "$*"; then return 0; else return 1; fi }; 
 
 uts.script() 
@@ -28,6 +30,7 @@ uts.abort()
 {
 	local exitcode=${1:-1};
 	uts.err "terminating with error code %d\n" $exitcode;
+	uts.err "stack trace: %s" $(uts.stack);
     exit $exitcode;
 }
 
@@ -64,7 +67,7 @@ uts.caller()
 
 uts.lineno()
 {
-	;; # TBD.
+	:; # TBD.
 }
 
 uts.val()
