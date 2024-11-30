@@ -42,11 +42,17 @@ uts.ref()
     uts.ref? $ref;
 }
 
+uts.int?()
+{
+	local ival=$(uts.val? $1);
+    ! uts.null $ival && ! uts.isint $ival && uts.err "$(uts.callingfn): arg value passed to <$(uts.thisfn)> is not an 'int' <$ival>\n" && uts.abort;
+	uts.yield $ival;
+}
+
 uts.int()
 {
-	local val=$(uts.val $1);
-	! uts.isint $val && uts.err "$(uts.callingfn): arg value passed to <$(uts.thisfn)> is not an 'int' <$val>\n" && uts.abort;
-	uts.yield $val;
+    local ival=$(uts.val $1);
+    uts.int? $ival;
 }
 
 uts.assert()
