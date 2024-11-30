@@ -1,7 +1,7 @@
 #!/bin/bash
 
-source uts.uts.shi
-$(uts.once)
+uts.source uts.global.shi
+$(uts.return_if_read)
 
 if true; then
 

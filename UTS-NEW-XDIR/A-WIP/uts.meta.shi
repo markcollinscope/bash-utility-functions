@@ -1,14 +1,12 @@
 #/bin/bash
 
 source uts.uts.shi
-
 $(uts.return_if_already_processed);
 
 uts.source uts.core.shi
 
 meta.puid()
 {
-
 	uts.yield $1_$$;
 }
 

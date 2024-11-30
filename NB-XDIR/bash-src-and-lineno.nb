@@ -1,0 +1,7 @@
+Context:
+
+trap fn ERR
+
+BASH_SOURCE[0]: Points to the file where the function was defined.
+BASH_SOURCE[1]: Points to the file where the trap was triggered.
+Combine BASH_SOURCE[1] with BASH_LINENO[0] for accurate error context.

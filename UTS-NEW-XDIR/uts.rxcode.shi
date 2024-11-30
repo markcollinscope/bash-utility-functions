@@ -1,22 +1,14 @@
 #!/bin/bash
 
 source uts.uts.shi
-$(uts.once);
+$(uts.return_if_read);
 
 uts.val()
 {
 	echo $*;
 }
 
-uts.isint()
-{
-	local val=$(uts.val $1);
 
-	local intregx="^[0-9]*$"	
-	local sedval=$(sed "s/$intregx//" <<< $val);
-
-	! test $val = "$sedval";
-}
 
 rxcode.is()
 {

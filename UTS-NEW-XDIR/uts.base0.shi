@@ -1,0 +1,90 @@
+#!/bin/bash
+
+source uts.global.shi;
+$(uts.return_if_read);
+
+uts.out() { printf "$@"; }
+uts.err() { >&2 uts.out "$@"; }
+uts.null() { test -z "$*"; }
+
+uts.stack() 
+{ 
+	local cnt=1;  while ! test -z ${FUNCNAME[$cnt]}; do uts.yield "%s..." ${FUNCNAME[$cnt]}; cnt=$((cnt + 1)); done; 
+}
+
+uts.script() {  uts.yield $(basename $0); }; 	
+
+uts.abort()
+{
+	local exitcode=${1:-1};
+	uts.err "terminating with error code %d\n" $exitcode;
+	uts.err "stack trace: %s" $(uts.stack);
+    exit $exitcode;
+}
+
+uts.nout() { >/dev/null "$@";  }		
+uts.nerr() { 2>/dev/null "$@"; }	
+uts.none() { uts.no uts.ne "$@"; }
+
+uts.yield() { uts.out $*; }
+uts.thisfile() { uts.yield ${BASH_SOURCE[0]}; }
+
+uts.fn() { local level=${1-1}; uts.yield ${FUNCNAME[$level]}; }
+uts.caller() { uts.yield ${FUNCNAME[2]}; }
+
+uts.whitepace() { local in="$@"; local sedval=$(sed 's/ //' <<< $in); ! test "$in" = "$sedval"; }
+
+uts.isval() { ! uts.null "$@"; }
+uts.val()
+{
+	local val=$1
+	local caller=$(uts.caller);
+	! uts.isval $val && uts.err "$(uts.caller): null arg value passed to <$(uts.fn)>\n" && uts.abort;
+	uts.whitepace $val && uts.err "$(uts.caller): arg value passed to <$(uts.fn)> contains whitespace <$val>\n" && uts.abort;
+
+	uts.yield $val;
+}
+
+uts.vals()
+{
+	for i in "$@"; do uts.none uts.val $i; done
+	uts.yield "$@";
+}
+
+uts.isref()
+{
+	local ref=$(uts.val $1);
+	uts.none declare -p $ref
+}
+
+uts.ref()
+{
+	local ref=$(uts.val $1);
+	! uts.isref $ref && uts.err "$(uts.caller): arg value passed to <$(uts.fn)> is not a 'ref' (a declared var) <$ref>\n" && uts.abort;
+	uts.yield $ref;
+}
+
+uts.isint()
+{
+	local val=$(uts.val $1);
+	local intregx="^[0-9]*$"	
+	local sedval=$(sed "s/$intregx//" <<< $val);
+	! test $val = "$sedval";
+}
+
+uts.int()
+{
+	local val=$(uts.val $1);
+	! uts.isint $val && uts.err "$(uts.caller): arg value passed to <$(uts.fn)> is not an 'int' <$val>\n" && uts.abort;
+	uts.yield $val;
+}
+
+uts.ab() { uts.yield "<$@>"; }
+
+# mv to global no prefix functions.
+null() { uts.null "$@"; }
+ne() { uts.nerr "$@"; }
+no() { uts.nout "$@"; }
+none() { uts.none "$@"; }
+ab() { uts.ab "$@"; }		# $(ab words) => '<words>' - in (a)ngle (b)rackets... ab...
+ws() { uts.whitespace "$@"; }
