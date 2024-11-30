@@ -1,18 +1,13 @@
 #!/bin/bash
 
-source uts.global.shi
-uts.source uts.base1.shi
+source uts.all.shi
 
-USAGE=$(cat << UTXT
-Usage: $(script) <fnname>
-Run a function <fnname> from utils.shi from the cmd line.
-UTXT
-);
-
-main()
+utsfn_main()
 {
-	vbecho "Will execute 'eval <$@>'"
+	uts.err "\n";
 	eval "$@";
+	uts.err "\n";
+	uts.err "\n";
 }
 
-main "$@"
+utsfn_main "$@"

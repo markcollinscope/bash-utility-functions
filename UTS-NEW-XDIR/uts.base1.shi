@@ -60,3 +60,4 @@ uts.assert()
     eval "$@";
     ! $? && uts.err "$(uts.caller) - $(uts.thisfn) -assertion fail (assering $(uts.ab $@))" && uts.abort;
 }
+

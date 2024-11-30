@@ -60,7 +60,6 @@ uts.isint()
 
 uts.ab() { uts.yield "<$@>"; }
 
-
 # mv to global no prefix functions.
 null() { uts.null "$@"; }
 ne() { uts.nerr "$@"; }
@@ -68,3 +67,4 @@ no() { uts.nout "$@"; }
 none() { uts.none "$@"; }
 ab() { uts.ab "$@"; }		# $(ab words) => '<words>' - in (a)ngle (b)rackets... ab...
 ws() { uts.whitespace "$@"; }
+

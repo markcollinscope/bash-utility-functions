@@ -12,7 +12,7 @@
 # See also <uts.exitreturn> - useful if a file can be run directly or included/sourced.
 
 # We all have to debug... sadly!
-dbg() { >&2 printf "$@"; }
+dbg() { >&2 echo "$@"; }
 
 # Enable exit/return from this file. from either: 
 # - if this file is the main controllling script (i.e. $0)		  - do: exit
