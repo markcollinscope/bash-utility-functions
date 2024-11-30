@@ -1,0 +1,58 @@
+#/bin/bash
+
+source uts.uts.shi
+
+$(uts.return_if_already_processed);
+
+uts.source uts.core.shi
+
+meta.puid()
+{
+
+	uts.yield $1_$$;
+}
+
+meta.privar()
+{
+	declare -g $(meta.puid $1);
+}
+
+privar.metadata()
+{
+	return $(meta.puid metadata);
+}
+
+meta.privar metadata;
+
+mode.metadata()
+{
+	local -n metadatamode=$(privar.metadata);
+
+	case $# in
+		2)	
+			local default=$1;
+			local envvar=$2;
+
+			metadatamode=${!envvar:-$default};
+		;;
+		1)	
+			local default=$1;
+			metadatamode=$default;
+		;;
+
+		0)
+			uts.yield $metadatamode;
+		;;
+
+		*)	
+			uts.err "$(uts.fn) - incorrect number of args ($#)";
+			uts.abort;
+		;;
+
+	ecac
+	return 0;
+}
+
+mode.metadata UTS_METADATA true;
+echo "mode.metadata: <$(mode.metadata)>"
+

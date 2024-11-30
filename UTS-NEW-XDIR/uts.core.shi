@@ -82,7 +82,5 @@ uts.val()
 	uts.yield $val;
 }
 
-uts.val 
-
 null() { uts.null $*; } # mv to global no prefix functions.
 
