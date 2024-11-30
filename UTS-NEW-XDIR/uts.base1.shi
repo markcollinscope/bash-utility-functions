@@ -1,0 +1,12 @@
+#!/bin/bash
+
+source uts.global.shi;
+$(uts.return_if_read);
+
+uts.source uts.base0.shi
+
+uts.assert()
+{
+    eval "$@";
+    ! $? && uts.err "$(uts.caller) - $(uts.fn) -assertion fail (assering $(uts.ab $@))" && uts.abort;
+}

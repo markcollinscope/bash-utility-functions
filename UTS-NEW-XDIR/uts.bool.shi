@@ -63,17 +63,6 @@ rxcode()
 	echo $*;
 }
 
-
-
-assert()
-{
-    eval "$@";
-    ! $? && {
-		uts.err "assert fail (assering <$@>)call stack: <${FUNCNAME[1]}> <${FUNCNAME[2]}> <${FUNCNAME[3]}>"; 
-        uts.abort;
-    }
-}
-
 word()
 {
 	echo 'what?'

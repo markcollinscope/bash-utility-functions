@@ -1,30 +1,19 @@
 #!/bin/bash
 
-source uts.uts.shi
+source uts.global.shi
 $(uts.return_if_read);
 
-uts.val()
-{
-	echo $*;
-}
-
-
+uts.source uts.base0.shi
 
 rxcode.is()
 {
-	local val=$(uts.val $1);
-	uts.isint $val && $((val >= 0)) && $((val < 256));
-}
-
-rxcode.assert()
-{
-	local val=$(val $1);
-	uts.assert rxcode.is $val;
+	local ival=$(uts.int $1);
+	$((ival >= 0)) && $((ival < 256));
 }
 
 rxcode.init()
 {
-	local val=$(val $1);
+	local ival=$(uts.val $1);
 	assert rxcode.is $val;
 	uts.yield $val;
 }
