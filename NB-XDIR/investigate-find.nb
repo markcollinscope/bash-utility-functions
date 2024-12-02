@@ -1,0 +1,11 @@
+for i in "$(find . -name a\* -exec echo '{}' \;)"; do echo "$i"; done
+./a b d
+./z z z/a b e
+./a b c
+
+
+for i in "$(find . -name a\* -exec echo '{}' \;)"; do ls -l  "$i"; done
+ls: cannot access './a b d'$'\n''./z z z/a b e'$'\n''./a b c': No such file or directory
+
+for i in "$(find . -name a\* -exec echo '{}' \;)"; do ls  "$i"; done
+ls: cannot access './a b d'$'\n''./z z z/a b e'$'\n''./a b c': No such file or directory
