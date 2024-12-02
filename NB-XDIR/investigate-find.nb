@@ -28,3 +28,9 @@ try also: "$i\n" - same (think).
 for i in "a b c" "d e f"; do printf "$i\n"; done
 a b c
 d e f
+
+
+-------------------------
+sedf() { sed 's?@\([@ia]*\)?"'"$\1"'"?g'; }
+eval $(echo 'for i in @aaa; do echo @i; done' | sedf)
+'hello world' 'goodbye sweet planet'
