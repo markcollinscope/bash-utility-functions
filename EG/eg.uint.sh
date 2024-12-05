@@ -1,8 +1,11 @@
 #/bin/bash
 
-# this stuff is all common across lots of areas. cut down versions shown. real stuff gives stack trace fn names... etc.
-_abort() { exit 1; }
 _err() { >&2 echo "$@"; }
+
+_err STEP 1:
+_err "basic constructor! and simple uint operation (uint +)"
+# this stuff is all common across lots of areas. cut down versions shown. real stuff gives stack trace fn names... etc.
+_abort() { _err 'Would abort here!!! - i.e. exit errorcode or SIGNAL - for trap/cleanup.'; }
 _val() {  test -z $1 && _err 'no value given in _val' && _abort; echo $1; }
 
 # another potential adt - but not the focus now.
@@ -76,6 +79,34 @@ C=$(uint + $A $B);
 echo "C: <$C> EXPECT:16"
 
 # error case.
-NOTINT=$(uint 35X) 2>&1;
+NOTINT=$(uint 35X) 
 
+_err END STEP 1.
 
+_err 'hit return'
+read x
+
+_err STEP 2:
+_err "improved error reporting - well stack trace"
+
+# redefine or new fns.
+_err() { >&2 printf "$@"; }
+
+_stack() 
+{ 
+	local cnt=1;  
+	_err "\nstack trace:\n"
+	while ! test -z ${FUNCNAME[$cnt]}; do 
+		_err "%s..." ${FUNCNAME[$cnt]};
+		cnt=$((cnt + 1)); 
+	done; 
+}
+
+_abort()
+{
+	_stack;
+	_err "\nwould abort / exit / raise signal here!!!"
+}
+
+# error case again!
+NOTINT=$(uint 35X) 
