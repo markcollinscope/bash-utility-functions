@@ -1,12 +1,22 @@
 #/bin/bash
 
-_err() { >&2 echo "$@"; }
+_demo_() { echo _err; }
+_demo() { local cmd=$1; local resvar=$2; local res=undefined; $(_demo_) $cmd; eval $cmd; $(_demo_) ${!resvar}; }
 
-_err STEP 1:
-_err "basic constructor! and simple uint operation (uint +)"
+_out() {  printf "$@" ;  printf '\n'; }
+_err() {  >&2 _out "$@"; }
+_dbg() { _err "$@"; }
+
+_err 'STEP 1:'
+_err "basic constructor! and simple uint operation (uint +)\n"
 # this stuff is all common across lots of areas. cut down versions shown. real stuff gives stack trace fn names... etc.
-_abort() { _err 'Would abort here!!! - i.e. exit errorcode or SIGNAL - for trap/cleanup.'; }
-_val() {  test -z $1 && _err 'no value given in _val' && _abort; echo $1; }
+
+_val() {  test -z $1 && _err 'no value given in _val' && _abort; _out $1; }
+_stack() { local cnt=1;  _out "stack trace:\n###"; while ! test -z ${FUNCNAME[$cnt]}; do _out "%s..." ${FUNCNAME[$cnt]}; cnt=$((cnt + 1)); 
+done; _out "###"; }
+_abort() { _err "$(_stack)"; _err "$(_fn): would abort / exit / raise signal here!!!"; }
+_fn() { _out ${FUNCNAME[1]}; }
+_fncaller() { _out ${FUNCNAME[2]}; }
 
 # another potential adt - but not the focus now.
 re.match() 
@@ -22,7 +32,7 @@ re.match()
 }
 
 # uint stuff - stripped down to basics - starts here.
-uint.err() { local ival=$(_val $1); _err "<$ival> is not an uint - bye"; _abort; }
+uint.err() { local ival=$(_val $1); _err "error in <$(_fncaller)>: <$ival> is not a valid uint - bye"; _abort; }
 
 # validation.
 uint.is() 
@@ -68,45 +78,16 @@ uint()
 
 # test code examples.
 X=$(uint 22)
-echo "X: <$X> EXPECT:22"
+_err "X: <$X> EXPECT:22"
 
 Y=$(uint + $X 33);
-echo "Y: <$Y> EXPECT:55"
+_err "Y: <$Y> EXPECT:55"
 
 A=13
 B=3;
 C=$(uint + $A $B);
-echo "C: <$C> EXPECT:16"
+_err "C: <$C> EXPECT:16"
 
 # error case.
 NOTINT=$(uint 35X) 
 
-_err END STEP 1.
-
-_err 'hit return'
-read x
-
-_err STEP 2:
-_err "improved error reporting - well stack trace"
-
-# redefine or new fns.
-_err() { >&2 printf "$@"; }
-
-_stack() 
-{ 
-	local cnt=1;  
-	_err "\nstack trace:\n"
-	while ! test -z ${FUNCNAME[$cnt]}; do 
-		_err "%s..." ${FUNCNAME[$cnt]};
-		cnt=$((cnt + 1)); 
-	done; 
-}
-
-_abort()
-{
-	_stack;
-	_err "\nwould abort / exit / raise signal here!!!"
-}
-
-# error case again!
-NOTINT=$(uint 35X) 
