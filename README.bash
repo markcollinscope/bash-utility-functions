@@ -2,6 +2,11 @@
 
 . utils.shi
 
+errecho 'tbd: current release version.'
+errecho 'tbd: ensure main is synced with latest tag release.'
+exit;
+
+set -e
 
 if ! test "$(pwd)" = "$(gitroot)"; then
 	errecho 'not in git root directory for utils'
@@ -11,7 +16,25 @@ fi
 LITERAL='```'
 
 cat << END
-# BASH-UTILS - VERSION 0.9.1 - UNDER FINAL REVIEW - PRODUCTION RELEASE - CAN BE USED.
+# Bash Utility functions 
+
+Including: 
+* simple sophisticated automatic options processing - option flags in any command line position, Custom option processing: boolean switches (e.g. -x|--exact); overriding default values (eg. --dir /home/mydir - override default 'dir' in script);
+* git repositoey query and manipulation e.g. gitroot - what's the current git root dir; git branches; gitcommit? - is a commit needed in this repo?
+* persistent (cross script - and cross process) variables - share values between scripts, use values from last script run, etc.
+* verbose/debugging output - e.g. vb echo ' ... ' - only used if --vb flag on calling script command line.
+* error outut functions - print to std error, include script name and current including function name, .., etc.
+* misc functions e.g. hit any key to continue' warning requiring yes/no reponse; 
+tbd tbd tbd tbd tbd tbD
+
+
+Repository source:			  $(git-o)
+Status:						  Working
+Current Release Version:	  auto-inserted - error if not!
+Branch to use:				  main/master.
+---
+Release Version (this file):  <tbd> - nb: if this is not the Current Release Version - this version should not be used for production (live) purposes - checkout the tagged Current Release Version.
+---
 
 [nb: There may be typos in this documentation. It is still under review. Please let the author know if you spot any.]
 
