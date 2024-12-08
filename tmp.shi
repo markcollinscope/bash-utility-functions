@@ -1,0 +1,61 @@
+declare -g fls=nout
+declare -g fle=nout
+
+isin () 
+{ 
+    local t=$1;
+    shift;
+    echo "$@" | grep --color=auto $t &> /dev/null
+}
+
+fns () 
+{ 
+    set | grep --color=auto '^[a-z]* ()' | sed 's/()//g' | grep -v fns | grep a;
+}
+
+mystartfns () 
+{ 
+	anewfn() { : ; }
+	tfls=$(fns | grep -v fns | grep -v mystartfns);
+	for fn in $tfls; do 
+		echo unset: $fn;
+		unset -f $fn; 
+	done
+    fls=$(fns)
+}
+mystartfns;
+
+aaanewfn() { : ; }
+
+myendfns () 
+{ 
+    fle=$(fns)
+}
+
+difffns () 
+{ 
+    for i in $fle;
+    do
+        ! isin $i $fls && echo $i;
+    done
+}
+
+run()
+{
+	echo Pre
+	fns;
+
+	echo Start;
+	echo $fls;
+
+	echo End;
+	myendfns;
+	echo $fle
+
+	echo
+	echo
+	echo Diff
+	difffns;
+}
+
+run
