@@ -48,7 +48,7 @@ export UTS_HELPFLAG=${UTS_HELPFLAG:-'--hh'}
 
 # external (e.g. node_modules) directories to ignore/remove from script (recursive) searches, etc. (to remove irrelevent output)
 export UTS_EXCLUDE=\
-${UTS_EXCLUDE:-"node_modules|Binary|sublime|SCRAP|SCRAPS|DVBinspector-1.10.1|\.ssh|\.git|vendor|XDIR|\/obj\/"}
+${UTS_EXCLUDE:-"node_modules|Binary|sublime|SCRAP|SCRAPS|DVBinspector-1.10.1|\.ssh|\.git|vendor|[Xx][Dd][Ii][Rr]|\/obj\/"}
 
 # todo: rename utsExcludes, etc.
 getExcludes() 		{ echo $UTS_EXCLUDE; };		export -f getExcludes;				# get global search excludes.
