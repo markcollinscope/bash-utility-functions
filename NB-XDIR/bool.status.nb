@@ -1,8 +1,0 @@
-
-bool.status()
-{
-	local status=$(arg $1);
-	if test $status = 0; then echo true; else echo false; fi
-}
-
-

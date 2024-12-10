@@ -1,8 +1,0 @@
-Here's a breakdown of how BASH_SOURCE works:
-
-${BASH_SOURCE[0]}: The name of the file currently being executed or sourced.
-${BASH_SOURCE[1]}: The name of the file that sourced or called ${BASH_SOURCE[0]}.
-${BASH_SOURCE[2]}: The name of the file that sourced or called ${BASH_SOURCE[1]}.
-...
-
-echo "Current line: $LINENO"
