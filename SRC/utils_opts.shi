@@ -67,13 +67,10 @@ _splitFlag()
 _echoFlag()
 {
 	local THEFLAG=$(arg $1);
-	vbecho "ECHOFLAG - THEFLAG: <"$THEFLAG">";
-	vbstack
 	local SPLITFLAG=$(_splitFlag $THEFLAG);
 	
 	local RES=$(echo $SPLITFLAG | sed 's/ /|/g');
 	
-	vbecho "ECHOFLAG - RES: <"$RES">";
 	echo $RES
 }
 
@@ -341,7 +338,7 @@ _svRem()
 }
 
 
-function bopt() # <name>
+bopt() # <name>
 # short form boolean opt <name> forms both the flag and the var used to show value if set.
 # see also boolopt.
 # nb: --rem cannot be used - todo. CHECK TODO
@@ -364,7 +361,7 @@ function bopt() # <name>
 	fi
 }
 
-function vopt() # <name>
+vopt() # <name>
 # short form value opt -  <name> forms both the flag and the var used to show value if set.
 # see also valopt.
 # nb: --rem cannot be used - todo. CHECK TODO

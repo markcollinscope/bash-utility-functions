@@ -1,3 +1,5 @@
+BUGS: optb --rem only shows the first word in option.
+
 fn.start()
 fn.end()
 
