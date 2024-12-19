@@ -19,6 +19,9 @@ END_OPTS
 ## nb: at present this is focused on git-autocompletion - e.g. optautocomplete "_git_customcommand() { _git_checkout; }" would set-up a
 ## 'git customcommand' script to automatically present the same bash autocomplete options as 'git checkout'.
 
+# ideas: UTILS - 'file-group-id', OPTS - specific 'file-id', DEP - specific 'env-var-group-id', COLON - specific 'value-id' within 'group-id'
+UTILS_OPTS_DEP_COLON=${UTILS_OPTS_DEP_COLON:-false};
+
 __USEAUTOCOMPLETE=false;
 __AUTOCOMPLETEOPTION="--autocomplete" 
 
@@ -50,18 +53,22 @@ rm -f $__USAGE_FILE;
 readonly __REMFLAG="--rem"
 readonly __OPTIONS="Options:"
 
+_vbdep() { vbecho "$(fnname -l 2)[deprecated function use]: $@ - including <$(fnname)"; }
+
 _splitFlag()
 {
-	readonly __FLAGSEPS="| :"
+	local flagseps="| ,";
+	$UTILS_OPTS_DEP_COLON && flagseps="$_FLAGSEPS :" && _vbdep UTILS_OPTS_DEP_COLOR;
 
-	local THEFLAG=$(arg $1);
-	local RES=$THEFLAG;
+	local theflag=$(arg $1);
+	local res=$theflag;
 
-	for i in $__FLAGSEPS; do
-		RES=$(echo $RES | sed "s/$i/ /g");
+	for i in $flagseps; do
+		res=$(echo $res | sed "s/$i/ /g");
 	done
 	# issue todo: if flag is '-e' - echo will assume it applies to it (e.g. echo -e ...).
-	echo $RES;
+	# trying printfg -- -e ...
+	printf -- "$res";
 }
 
 _echoFlag()
