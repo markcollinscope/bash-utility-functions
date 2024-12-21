@@ -5,10 +5,10 @@ USAGE=$(cat <<END_USAGE
 
 Usage: $(basename $0) [-options] <part-fn-name>
 
-Search <MYENV_SCRIPTROOT> and sub-dirs for all 'script includes (*.$UTS_BASHINCLUDE, etc)' to find bash fns matching the partial name given.
+Search <MY_SCR_ROOT> and sub-dirs for all 'script includes (*.$UTS_BASHINCLUDE, etc)' to find bash fns matching the partial name given.
 <part-fn-name> is a grep style pattern. Do *not* put '()' at the end - this is done automatically.
 
-nb: you must define MYENV_SCRIPTROOT in your environment for this function to work, or an error will be given.
+nb: you must define MY_SCR_ROOT in your environment for this function to work, or an error will be given.
 
 Matches functions of the form:
 "afunctionname()" - i.e. function name is at start of line, alphanumeric name, () at the end, no spaces in name or before ().
@@ -19,7 +19,7 @@ END_USAGE
 
 . utils.shi
 
-chkvar MYENV_SCRIPTROOT
+chkvar MY_SCR_ROOT
 
 Usage()
 {

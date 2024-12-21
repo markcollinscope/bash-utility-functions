@@ -2,7 +2,8 @@
 
 . utils.shi
 
-ROOT=$MYENV_UTSROOT;
+chkenvvar MY_UTILS_REPO
+ROOT=$MY_UTILS_REPO
 
 USAGE=$(cat <<ENDUSAGE
 Usage: $(script)
@@ -13,9 +14,6 @@ ENDUSAGE
 )
 eval $(boolopt --rem ' start search from cwd' '--cwd' STARTCWD "$@");
 errifopt "$@"
-
-vbvar MYENV_UTSROOT
-vbvar ROOT
 
 main()
 {
