@@ -1,0 +1,509 @@
+#!/bin/bash
+
+. utils_globals.shi
+if ! alreadyIncluded UTILS_OPTS; then
+
+OPTS_SUMMARY=$(cat << END_OPTS
+Utility functions to enable the automatic parsing of command line option flags (-x, --doit, etc) \
+and their subsequent removal from the command line argument to make processing easier. Options can appear in any position. \
+Use of an optional --rem 'description ...' when specifying command line flag auto processing \
+results in the 'description ...' being added automatically to the Usage description in the containing script \
+(assuming it uses the default Usage() function).
+END_OPTS
+);
+
+. utils_core.shi
+. utils_msc.shi
+
+## functions to enable printing of 'autocomplete' command to be eval'd to setup cmd line autocomplete (bash autocomplete).
+## nb: at present this is focused on git-autocompletion - e.g. optautocomplete "_git_customcommand() { _git_checkout; }" would set-up a
+## 'git customcommand' script to automatically present the same bash autocomplete options as 'git checkout'.
+
+# ideas: UTILS - 'file-group-id', OPTS - specific 'file-id', DEP - specific 'env-var-group-id', COLON - specific 'value-id' within 'group-id'
+UTILS_OPTS_DEP_COLON=${UTILS_OPTS_DEP_COLON:-false};
+
+__USEAUTOCOMPLETE=false;
+__AUTOCOMPLETEOPTION="--autocomplete" 
+
+optautocomplete() # <auto complete command>
+# e.g. a scripts could contain:
+# optautocomplete "_git_rmb() { _git_checkout; }; export _git_rmb" - see bash and git autocomplete for more details.
+{
+	setvar AC "$*"
+	if $__USEAUTOCOMPLETE; then
+		echo $AC;
+		exitok;
+	fi
+}
+
+# if autoargument processing (uts_globals) is turned on.
+if ! $UTS_NOAUTOARGS; then
+	# if the first argument to the script including this file is '--autocomplete'
+	if test "$1" = "$__AUTOCOMPLETEOPTION"; then  
+		# switch on auto complete for bash/git.
+		__USEAUTOCOMPLETE=true;
+		shift;
+	fi
+fi
+
+# for use in building up options description, as part of Usage call.
+__USAGE_FILE=$(tmpFile);
+rm -f $__USAGE_FILE;
+
+readonly __REMFLAG="--rem"
+readonly __OPTIONS="Options:"
+
+_vbdep() { vbecho "$(fnname -l 2)[deprecated function use]: $@ - including <$(fnname)"; }
+
+_splitFlag()
+{
+	local flagseps="| ,";
+	$UTILS_OPTS_DEP_COLON && flagseps="$_FLAGSEPS :" && _vbdep UTILS_OPTS_DEP_COLOR;
+
+	local theflag=$(arg $1);
+	local res=$theflag;
+
+	for i in $flagseps; do
+		res=$(echo $res | sed "s/$i/ /g");
+	done
+	# issue todo: if flag is '-e' - echo will assume it applies to it (e.g. echo -e ...).
+	# trying printfg -- -e ...
+	printf -- "$res";
+}
+
+_echoFlag()
+{
+	local THEFLAG=$(arg $1);
+	local SPLITFLAG=$(_splitFlag $THEFLAG);
+	
+	local RES=$(echo $SPLITFLAG | sed 's/ /|/g');
+	
+	echo $RES
+}
+
+_lastFlag()
+{
+	local FLAG=$(arg $1);
+	local SPLITFLAG=$(_splitFlag $FLAG);
+
+	local LAST=
+	for f in $SPLITFLAG; do
+		LAST=$f;
+	done
+	_echoFlag $LAST
+}
+
+_optAsVar()
+# echo return the <flag> given without leading '-'s
+# e.g. '--optone' would become 'optone'
+{
+	local flag=$(arg $1)
+	echo "$flag" | sed 's/-*//g';
+}
+
+_optAsFlag() ## <flag> (with or wihout dashes) as flag (all combined).
+# echo return <flag> with - or -- prefix. 
+# <flag> with existing - or -- returned unchanged.
+{
+	local flag=$(arg $1);
+	flag=$(_optAsVar $flag);
+	local len=${#flag};
+
+	if test $len == "1"; then
+		echo $(concat '-' $flag);
+	else
+		echo $(concat '--' $flag);
+	fi
+}
+
+_addOptRem()
+{
+	setvar FLG "$1";
+	setvar TXT "$2";
+
+	if ! test -f $__USAGE_FILE; then 
+		echo $__OPTIONS > $__USAGE_FILE;
+	fi
+
+	echo $(_echoFlag "$FLG") "$TXT" >> $__USAGE_FILE;
+}
+
+_processRem() 
+{
+	local USEDOC="$1"
+	local RET=
+
+	if test "$USEDOC" = "$__REMFLAG"; then
+		setvar TEXT "$2";
+		setvar FLAG "$3";
+		_addOptRem "$FLAG" "$TEXT";
+		RET="shift 2";
+	fi
+	echo $RET;
+}
+
+getOptUsage() # [-n]
+# print option documentation a given by '--rem' argument to xxxopt functions.
+# -n: don't print "Options:" at head of option list.
+{
+	local FILTER=false;
+
+	if test "$1" = "-n"; then 
+		FILTER=true;
+	fi
+
+	if test -f $__USAGE_FILE; then
+		$FILTER || cat $__USAGE_FILE;
+		$FILTER && ( cat $__USAGE_FILE | grep -v "$__OPTIONS" );
+	fi
+}
+
+_ismatch()
+{
+	local VAL=$(arg $1);
+	shift;
+
+	for match in "$@"; do 
+		if test $match == "$VAL"; then
+			return 0;
+		fi
+	done
+	return 1;
+}
+
+
+binopt() # [ --rem <documentation...> ] <flag> <bash var> <default-value> <value-if-flag-given> "$@"
+# called in the form:
+# eval $(binopt --rem '<documentation...' -a AVARIABLE 99 101 "$@")
+# where: 	<flag> (-a) is the flag to be processed on the including script.
+#			<bash-var> (AVARIABLE) - the bash var to set set to either <default-value> or <other-value>
+#			<default-value> - <bash-var> is set to this value if <flag> is not present 
+#			  (nb. a pre-existing value will not be overriden by the <default-value> - only NULL ("") values are replaced.
+#			<value-if-flag-given> - <bash-var> is set to this value if <flag> is present
+# --rem is optional. If given <documentation...> will be added to Usage of containing script.
+{
+	eval $(_processRem "$@");
+
+	local FLAG VAR DEFAULT_VALUE OTHER_VALUE;
+
+	setvar FLAG "$1"
+	setvar VAR "$2"
+
+	setvar DEFAULT_VALUE "$3"
+	setvar OTHER_VALUE "$4"
+
+	shift 4;
+
+	local ARGS=
+	local FLAGSPLIT=$(_splitFlag $FLAG);
+
+
+	if null ${!VAR}; then
+		EVAL="$VAR=\"$DEFAULT_VALUE\""
+	fi
+
+	while ! null "$1"; do
+		if _ismatch "$1" $FLAGSPLIT; then
+			EVAL="$VAR=\"$OTHER_VALUE\""
+		else
+			ARGS="$ARGS \"$1\"";
+		fi
+		shift;
+	done
+
+	echo "set -- $ARGS; $EVAL"
+}
+
+
+boolopt() # [ --rem <documentation...> ] <flag> <bash var> "$@"
+# called in the form:
+# eval $(boolopt --rem <documentation...> -a AVARIABLE "$@")
+# where: 	<flag> (-a) is the flag to be processed on the including script.
+#			<bash-var> (AVARIABLE) - the bash var to set set to either 'true' or 'false'
+# --rem is optional. If given <documentation...> will be added to Usage of containing script.
+# 
+# AVARIABLE is set to true if <flag> is present on the script call command line.
+{
+	eval $(_processRem "$@");
+	
+	setvar FLAG "$1"
+	setvar VAR "$2"
+	shift 2;
+	
+	binopt "$FLAG" "$VAR" false true "$@"
+}
+
+valopt() # [ --rem <documentation...> ] <flag> <bash var> "$@"
+# called in the form:
+# eval $(valopt --rem "documentation..." -a AVARIABLE "$@")
+# where: 	<flag> (-a) is the flag to be processed on the including script.
+#			<bash-var> (AVARIABLE) - the bash var to set set to either <default-value> or <other-value>
+# --rem is optional. If given <documentation...> will be added to Usage of containing script.
+{
+	eval $(_processRem "$@");
+
+	setvar FLAG "$1"
+	setvar VAR "$2"
+	shift 2;
+
+	local ARGS=
+	local EVAL=
+
+	local FLAGSPLIT=$(_splitFlag $FLAG);
+
+	while ! test -z "$1"; do
+		if _ismatch "$1" $FLAGSPLIT; then
+			EVAL="$VAR=\"$2\""
+			shift 2;
+		else
+			ARGS="$ARGS \"$1\"";
+			shift
+		fi
+	done
+
+	echo "set -- $ARGS; $EVAL "
+}
+
+Usage() # no args. 
+# print $USAGE and also print option documentation defined using boolopt, valopt (with --rem flag), etc.
+# nb: redefinition of Usage defined in _core utils.
+{
+	OPTIONS="$(getOptUsage)"
+	>&2 cat<<<$USAGE
+	>&2 cat<<<$OPTIONS
+}
+
+__MAXARGS=9999 # arbitrary but large - upper limit
+
+chkargcount() # [-l] <lower-limit> <upper-limit> "$@"
+# check argument count in "$@" is between <lower-limit> and <upper-limit> inclusive - if not,  error with exit.
+# [-l] - lower limit only required, no upper limit.
+{
+	_LOWERONLY=false; 
+	if test "$1" = "-l"; then 
+		_LOWERONLY=true; 
+		shift; 
+	fi
+	setvar _LOWERLIMIT $1;
+	shift;
+
+	if ! $_LOWERONLY; then 
+		setvar _UPPERLIMIT $1; 
+		shift; 
+	else 
+		_UPPERLIMIT=$__MAXARGS; 
+	fi
+	chkarg _UPPERLIMIT
+
+	local COUNT=$(count "$@");
+
+	if (( $COUNT < $_LOWERLIMIT )) || (( $COUNT > $_UPPERLIMIT)); then
+		local MSG="Incorrect number of arguments - "
+		if $_LOWERONLY; then 
+			MSG=$(concat "$MSG" "$COUNT arguments given - at least: $_LOWERLIMIT are required")
+		elif (( $_LOWERLIMIT == $_UPPERLIMIT )); then
+			MSG=$(concat "$MSG" "$COUNT arguments given - expected $_LOWERLIMIT");
+		else
+			MSG=$(concat "$MSG" "expected (between): $_LOWERLIMIT and $_UPPERLIMIT - got $COUNT");
+		fi
+		errecho "$MSG"
+
+		callFnIfExists Usage;
+		exiterr -k;
+	fi
+}
+
+# do autoparsing of help flags.
+if ! $UTS_NOAUTOARGS; then 
+	UTS_HELPFLAG=${UTS_HELPFLAG:-"--hh"} # final default...
+    eval $(boolopt $UTS_HELPFLAG __DO_HELP "$@");
+fi
+
+
+_processHelp() 
+# print usage if help has been requested on the command line.
+{
+	if $__DO_HELP; then
+		callFnIfExists Usage; 
+		callFnIfExists Help; 
+		exitok; 
+	fi
+}
+
+
+_svRem()
+{
+	local -n remsave=$(arg ${1-""});
+	local rem=$(arg ${2:-""});
+
+	if test "$rem" = "$__REMFLAG"; then
+		remsave=$(arg ${3:-""});
+		return 0;
+	fi
+
+	return 1;
+}
+
+
+bopt() # <name>
+# short form boolean opt <name> forms both the flag and the var used to show value if set.
+# see also boolopt.
+# nb: --rem cannot be used - todo. CHECK TODO
+{
+	local remstring;
+	local remused=false;
+	
+	_svRem remstring "$@" && { shift 2; remused=true; }
+
+	local flags=$(arg $1);
+	shift;
+
+	local varname=$(_lastFlag $flags)
+	varname=$(_optAsVar $varname);
+
+	if $remused; then
+		boolopt --rem "$remstring" $flags $varname "$@";
+	else
+		boolopt $flags $varname "$@";
+	fi
+}
+
+vopt() # <name>
+# short form value opt -  <name> forms both the flag and the var used to show value if set.
+# see also valopt.
+# nb: --rem cannot be used - todo. CHECK TODO
+{
+	local remstring;
+	local remused=false;
+
+	_svRem remstring "$@" && { shift 2; remused=true; }
+	
+	local flags=$(arg $1);
+	shift;
+
+	local varname=$(_lastFlag $flags);
+	varname=$(_optAsVar $varname);
+
+	if $remused; then
+		valopt --rem "$remstring" $flags $varname "$@";
+	else
+		valopt $flags $varname "$@";
+	fi
+}
+
+optset() # <name>
+# is option <name> set to true (if bool option), or non null (if value option)
+{
+	local opt=$(arg $1);
+	opt=$(_optAsVar $opt);
+	local val=${!opt};
+
+	if null "$val" ; then return 1; fi
+	if test $val == false; then return 1; fi
+
+	return 0;
+}
+
+_iseven() # tbd. move this.
+{
+	local num=$(arg $1);
+	local remainder=$((num % 2));
+	
+	return $(test $remainder = 0);
+}
+
+_assertbool()
+{
+	local val=$(arg $1);
+
+	if ! test $val = true && ! test $val = false; then 
+		errecho "$(fnname -l 2): bool value expected (true, false) - value given <$val> - bye!";
+		exiterr -k;
+	fi
+	return 0;
+}
+
+optboolfwd() # <boolflag> <boolvar> [ <boolflag> <boolvar> ] ...
+{
+	local n=$#;
+	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
+
+	local res="";
+	for ((i=1; i<$n; i+=2)); do
+		local bflag=$(_optAsFlag ${!i});
+		local j=$((i+1))
+		local bvar=${!j};
+		local bval=${!bvar};
+
+		if null $bval; then bval=false; fi # todo - review if null values should be allowed.
+		_assertbool $bval;
+
+		if $bval; then res=$(concat -s $res $bflag); fi
+	done
+	echo $res;
+}
+
+optbfwd() # # [<flagvar> ...]
+{
+	local flagvars="$@";
+
+	local res;
+	for i in $flagvars; do
+		local bflag=$(_optAsFlag $i);
+		local bvar=$(_optAsVar $i);
+		res=$(concat -s $res $bflag $bvar);
+	done
+	if ! null "$res"; then optboolfwd $res; fi
+}
+
+optvalfwd() # <valflag> <valvar>
+{
+	local n=$#;
+	if ! _iseven $n; then errfnecho "uneven number of args ($n), bye..."; exiterr -k; fi
+
+	local res="";
+	for ((i=1; i<$n; i+=2)); do
+		local vflag=$(_optAsFlag ${!i});
+		local j=$((i+1))
+		local vvar=${!j};
+		local vval=${!vvar};
+
+		if ! null "$vval"; then res=$(concat -s $res $vflag $vval); fi
+	done
+	echo $res;
+}
+
+optvfwd() # # [<flagvar> ...]
+{
+	local flagvars="$@";
+
+	local res;
+	for i in $flagvars; do
+		local vflag=$(_optAsFlag $i);
+		local vvar=$(_optAsVar $i);
+		res=$(concat -s $res $vflag $vvar);
+	done
+	if ! null "$res"; then optvalfwd $res; fi
+}
+
+errifopt() # "$@"
+# exit with error if there are options (-*) present (or left after boolopt, valopt processing)  in "$@" 
+# if help has been requested by command line flag (e.g. --hh) it will be shown.
+{
+	_processHelp
+
+	while ! test -z "$1"; do
+		case "$1" in
+		-*)
+			errecho "Unknown option: \"$1\""
+			Usage;
+			exiterr -k;
+			;;
+		esac
+		shift;
+	done
+}
+
+# END CONTENT
+fi
+
