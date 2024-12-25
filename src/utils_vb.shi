@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# utils to enable addtional (perhaps debug) information to be printed (to stderr) only when UTS_VERBOSE flag is set.
+# utils to enable addtional (perhaps debug) information to be printed (to stderr) only when UTILS_VERBOSE flag is set.
 
 . utils_globals.shi
 
@@ -8,11 +8,11 @@ if ! alreadyIncluded UTILS_VB; then
 . utils_core.shi
 . utils_opts.shi
 
-UTS_VERBOSEFLAG=${UTS_VERBOSEFLAG:-'--vb'}	# can override from environment. # default of last resort here!
+UTILS_VERBOSEFLAG=${UTILS_VERBOSEFLAG:-'--vb'}	# can override from environment. # default of last resort here!
 
 ## START CONTENT
 VB_SUMMARY=$(cat <<END_VB
-Functions mainly used in debugging - that print values, etc. when a 'verbose' flag is set to TRUE/ON.  Note that the functionality automatically parses (then removes) "$UTS_VERBOSEFLAG", if it is an argument to a script using these utils. If detected the 'verbose' flag (UTS_VERBOSE) is set to TRUE/ON. If not detected UTS_VERBOSE will be set to FALSE/OFF.
+Functions mainly used in debugging - that print values, etc. when a 'verbose' flag is set to TRUE/ON.  Note that the functionality automatically parses (then removes) "$UTILS_VERBOSEFLAG", if it is an argument to a script using these utils. If detected the 'verbose' flag (UTILS_VERBOSE) is set to TRUE/ON. If not detected UTILS_VERBOSE will be set to FALSE/OFF.
 END_VB
 );
 
@@ -20,14 +20,14 @@ setVerbose()
 # set the verbose flag to TRUE 
 # nb: used by vbecho and similar functions
 { 
-	export UTS_VERBOSE=true; 
-	export UTS_VERBOSE_PASSTHRU="$UTS_VERBOSEFLAG";
+	export UTILS_VERBOSE=true; 
+	export UTILS_VERBOSE_PASSTHRU="$UTILS_VERBOSEFLAG";
 }
 
 getVerbose() # TBD: Deprecate.
 # return true (0) if verbose flag set to on.
 { 
-	if $UTS_VERBOSE; then return 0; else return 1; fi; 
+	if $UTILS_VERBOSE; then return 0; else return 1; fi; 
 }
 
 verbose()		
@@ -40,7 +40,7 @@ resetVerbose()
 # set verbose flag to false.
 # nb: used by vbecho and similar functions
 { 
-	export UTS_VERBOSE=false; 
+	export UTILS_VERBOSE=false; 
 }
 
 resetVerbose;
@@ -56,7 +56,7 @@ vbvar() # <bash-var> - nb: no '$' needed or permitted.
 vbecho() # <string>
 # print <string> if $(verbose) - verbose output flag - is true.
 { 
-	if $UTS_VERBOSE; then setcol $YELLOW; (>&2 echo $*); setcolnorm; fi 
+	if $UTILS_VERBOSE; then setcol $YELLOW; (>&2 echo $*); setcolnorm; fi 
 }
 
 vbfnecho() # <string>
@@ -78,14 +78,14 @@ vbstack() # print call stack if $(verbose) - if verbose output selected.
 vbsleep() # <seconds>
 # sleep for <seconds> if $(verbose) (verbose output flag) is true.
 { 
-	if $UTS_VERBOSE; then sleep $*; fi 
+	if $UTILS_VERBOSE; then sleep $*; fi 
 }
 
 checkIfVerbose() # <arg> - deprecated 
 # now autoparses - for backwards compatibility and internal utils use only.
-# quick parse to set if <arg> is $UTS_VERBOSEFLAG flag (by default '--vb', but can be reset).
+# quick parse to set if <arg> is $UTILS_VERBOSEFLAG flag (by default '--vb', but can be reset).
 {
-	if test "$1" = "$UTS_VERBOSEFLAG"; then
+	if test "$1" = "$UTILS_VERBOSEFLAG"; then
 		setVerbose;
 		return 0;
 	fi
@@ -104,8 +104,8 @@ evalvb() # <command>
 
 
 # do autoparsing of verbose flag.
-if ! $UTS_NOAUTOARGS; then
-	eval $(boolopt $UTS_VERBOSEFLAG USE_VERBOSE_OUTPUT "$@");
+if ! $UTILS_NOAUTOARGS; then
+	eval $(boolopt $UTILS_VERBOSEFLAG USE_VERBOSE_OUTPUT "$@");
 	if $USE_VERBOSE_OUTPUT; then
 		setVerbose;
 	fi
@@ -114,8 +114,8 @@ fi
 #-- nb
 # ### Autoparsing of Command Line Options
 #
-# This utilities file parses command line to see of UTS_VERBOSEFLAG ('--vb' by default, configurable in utils_globals) is present,
-# if so, removes UTS_VERBOSEFLAG from the including script's command line args - so is 
+# This utilities file parses command line to see of UTILS_VERBOSEFLAG ('--vb' by default, configurable in utils_globals) is present,
+# if so, removes UTILS_VERBOSEFLAG from the including script's command line args - so is 
 # transparent to that script. The overall effect is that any script using this utils file will switch on versose mode (useful debugging)
 # completely transparently to the including script.
 #--

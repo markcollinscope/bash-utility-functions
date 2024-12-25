@@ -4,7 +4,7 @@
 
 FD_SUMMARY=$(cat << END_FD
 Utilities for file and directory management. Find directories and files, check they exist, find directories not in the 'excluded' \
-list (UTS_EXCLUDE - defined in egrep format). Functions with 'x' as first char exclude results based on the UTS_EXCLUDE value.
+list (UTILS_EXCLUDE - defined in egrep format). Functions with 'x' as first char exclude results based on the UTILS_EXCLUDE value.
 END_FD
 );
 
@@ -138,12 +138,12 @@ findfile() # [ -d <dir> ] [ -h ] <file>
 }
 
 backupFile() # <file/dir>
-# make a backup <to UTS_BACKUPDIR> of <file> nb: can be a dir.
+# make a backup <to UTILS_BACKUPDIR> of <file> nb: can be a dir.
 {
 	FILE=$1; chkarg FILE;
 
-	ensuredirexists $UTS_BACKUPDIR
-	BACKUPFILE=$UTS_BACKUPDIR/$FILE.$(date --iso-8601)
+	ensuredirexists $UTILS_BACKUPDIR
+	BACKUPFILE=$UTILS_BACKUPDIR/$FILE.$(date --iso-8601)
 
 	if test -e $FILE; then		
 		vbecho "FILE <$FILE> IS BEING BACKED UP TO <$BACKUPFILE>"
@@ -152,7 +152,7 @@ backupFile() # <file/dir>
 }
 
 backupDir() # <dir>
-# make a backup <to UTS_BACKUPDIR> of <dir> nb: can be a file.
+# make a backup <to UTILS_BACKUPDIR> of <dir> nb: can be a file.
 { 
 	backupFile $*; 
 }

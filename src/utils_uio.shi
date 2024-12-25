@@ -4,8 +4,8 @@
 if ! alreadyIncluded UTILS_UIO; then
 . utils_opts.shi
 
-__UTS_FORCE=false;						# override manual intervention requests
-UTS_FORCEFLAG=${UTS_FORCEFLAG:-"--ff"}	# can override from environment.
+__UTILS_FORCE=false;						# override manual intervention requests
+UTILS_FORCEFLAG=${UTILS_FORCEFLAG:-"--ff"}	# can override from environment.
 
 ###
 # The functions below (force related) set the 'force' flaghat override requests for user confirmation.
@@ -17,25 +17,25 @@ UTS_FORCEFLAG=${UTS_FORCEFLAG:-"--ff"}	# can override from environment.
 
 UIO_SUMMARY=$(cat <<END_UIO
 Functions that request user input ("warning: do you want to..., hit any key to...") before continuing. \
-Putting "$UTS_FORCEFLAG" as an arguments to a script call 'forces' the functions to skip user input (e.g. like rm -f does).\
-Parsing of UTS_FORCEFLAG ($UTS_FORCEFLAG) is automatic.
+Putting "$UTILS_FORCEFLAG" as an arguments to a script call 'forces' the functions to skip user input (e.g. like rm -f does).\
+Parsing of UTILS_FORCEFLAG ($UTILS_FORCEFLAG) is automatic.
 END_UIO
 );
 
 setForce() 		
 # set the force flag to true.
 { 
-	export __UTS_FORCE=true; 
+	export __UTILS_FORCE=true; 
 }
 resetForce()	
 # set the force flag to false.
 { 
-	export __UTS_FORCE=false;
+	export __UTILS_FORCE=false;
 }
 getForce()		
 # return TRUE if the force flag is set.
 { 
-	if $__UTS_FORCE; then return 0; else return 1; fi; 
+	if $__UTILS_FORCE; then return 0; else return 1; fi; 
 }
 
 force()			
@@ -45,9 +45,9 @@ force()
 }
 
 checkIfForce() # <arg> - deprecated - for back compatibility and internal utils use.
-# check if <arg> is $UTS_FORCEFLAG- if it is the force flag will be set.
+# check if <arg> is $UTILS_FORCEFLAG- if it is the force flag will be set.
 {
-	if test "$1" = "$UTS_FORCEFLAG"; then setForce; return 0; else return 1; fi
+	if test "$1" = "$UTILS_FORCEFLAG"; then setForce; return 0; else return 1; fi
 }
 
 hitAnyKeyToContinue() # [<message>] 
@@ -96,9 +96,9 @@ Warning() # [-n] [<message>]
 	return $RETURN_VAL;
 }
 
-# Parse args of containing script - set force flag is option set (default --ff, but configurable as UTS_FORCEFLAG).
-if ! $UTS_NOAUTOARGS; then
-	eval $(boolopt $UTS_FORCEFLAG IGNORE_USER_INPUT "$@");
+# Parse args of containing script - set force flag is option set (default --ff, but configurable as UTILS_FORCEFLAG).
+if ! $UTILS_NOAUTOARGS; then
+	eval $(boolopt $UTILS_FORCEFLAG IGNORE_USER_INPUT "$@");
 	if $IGNORE_USER_INPUT; then 
 		setForce; 
 	fi

@@ -70,7 +70,7 @@ To do this - having cloned this repo:
 $LITERAL
 # this is optional - and shows the redefinition of a default 
 # value ('--vb') within utilities, see later documentation.
-export UTS_VERBOSEFLAG='-v' 
+export UTILS_VERBOSEFLAG='-v' 
 
 . utils.shi  
 # note the 'dot' (.)

@@ -16,7 +16,7 @@ if ! alreadyIncluded UTILS_PVAR; then
 # START CONTENT
 
 __PVARSUFFIX=".pvar"
-__PVARDIR=${UTS_PVARDIR:-"/tmp/PVARS"}
+__PVARDIR=${UTILS_PVARDIR:-"/tmp/PVARS"}
 ensuredirexists $__PVARDIR
 
 _pvardir()

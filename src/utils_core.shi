@@ -220,7 +220,7 @@ isTerminalOutput()
 }
 
 # set to <true> to turn color off.
-UTS_NOCOLOR=${UTS_NOCOLOR:-false}
+UTILS_NOCOLOR=${UTILS_NOCOLOR:-false}
 
 setcol() # <color code>
 # set text color - see VT100 color codes in this file. 
@@ -228,7 +228,7 @@ setcol() # <color code>
 # precede color code with $ (e.g. $BLACK).
 {
 	local COLOR=$1; chkarg COLOR;
-	if $UTS_NOCOLOR; then return 0; fi
+	if $UTILS_NOCOLOR; then return 0; fi
 
 	if isTerminalOutput; then echo -n -e $COLOR; fi
 	if isTerminalOutput 2; then >&2 echo -n -e $COLOR; fi
@@ -310,14 +310,14 @@ checkNotEmptyString() # <msg> [ <bash var name> ] - deprecated.
 
 xgrep() # <...normal 'grep' args>
 # call grep with args given, but exclude certain patterns from results (grep -v)
-# $UTS_EXCLUDE defines the pattern - in egrep form - see utils_globals.shi.
+# $UTILS_EXCLUDE defines the pattern - in egrep form - see utils_globals.shi.
 { 
 	grep "$@" | grep -v -E "$(getExcludes)"; 
 }
 
 xfind() # <... standard find args>
 # call find with args given, but exclude certain patterns from results (grep -v)
-# $UTS_EXCLUDE defines the pattern - in egrep form - see utils_globals.shi.
+# $UTILS_EXCLUDE defines the pattern - in egrep form - see utils_globals.shi.
 { 
 	find "$@" | grep -v -E "$(getExcludes)"; 
 }

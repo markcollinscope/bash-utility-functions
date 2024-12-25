@@ -5,7 +5,7 @@ USAGE=$(cat <<END_USAGE
 
 Usage: $(basename $0) [-options] <part-fn-name>
 
-Search <MY_SCR_ROOT> and sub-dirs for all 'script includes (*.$UTS_BASHINCLUDE, etc)' to find bash fns matching the partial name given.
+Search <MY_SCR_ROOT> and sub-dirs for all 'script includes (*.$UTILS_BASHINCLUDE, etc)' to find bash fns matching the partial name given.
 <part-fn-name> is a grep style pattern. Do *not* put '()' at the end - this is done automatically.
 
 nb: you must define MY_SCR_ROOT in your environment for this function to work, or an error will be given.
@@ -108,9 +108,9 @@ searchForMatch()
 main()
 {
 
-	cd $UTS_SCRIPTDIR
+	cd $UTILS_SCRIPTDIR
 	vbecho "Starting search in <$(pwd)>"
-	FILEPATTERN=${FILEPATTERN:-"$UTS_BASHINCLUDE"}
+	FILEPATTERN=${FILEPATTERN:-"$UTILS_BASHINCLUDE"}
 
 	if $ANYFUNCTION; then
 		searchForMatch "$FILEPATTERN"

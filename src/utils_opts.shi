@@ -37,7 +37,7 @@ optautocomplete() # <auto complete command>
 }
 
 # if autoargument processing (uts_globals) is turned on.
-if ! $UTS_NOAUTOARGS; then
+if ! $UTILS_NOAUTOARGS; then
 	# if the first argument to the script including this file is '--autocomplete'
 	if test "$1" = "$__AUTOCOMPLETEOPTION"; then  
 		# switch on auto complete for bash/git.
@@ -314,9 +314,9 @@ chkargcount() # [-l] <lower-limit> <upper-limit> "$@"
 }
 
 # do autoparsing of help flags.
-if ! $UTS_NOAUTOARGS; then 
-	UTS_HELPFLAG=${UTS_HELPFLAG:-"--hh"} # final default...
-    eval $(boolopt $UTS_HELPFLAG __DO_HELP "$@");
+if ! $UTILS_NOAUTOARGS; then 
+	UTILS_HELPFLAG=${UTILS_HELPFLAG:-"--hh"} # final default...
+    eval $(boolopt $UTILS_HELPFLAG __DO_HELP "$@");
 fi
 
 

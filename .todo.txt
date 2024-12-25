@@ -295,28 +295,28 @@ new_date=$(date -d "1 year" +"%Y-%m-%d")
 FUNCTION & VARIABLE RENAME LIST inc ENV VARS.
 <old> [<old...>] -> <new> [<alt-new...>] | dep/del + # notes.
 scriptName -> dep
-getGlobBackupDir -> utsVar -B -b |--backup-dir  # for all exported UTS_ values.
+getGlobBackupDir -> utsVar -B -b |--backup-dir  # for all exported UTILS_ values.
 
-sSUTS_BACKUPDIR export?
-UTS_BASHINCLUDE - rename - is .shi?
-UTS_EXCLUDE - grep.
+sSUTILS_BACKUPDIR export?
+UTILS_BASHINCLUDE - rename - is .shi?
+UTILS_EXCLUDE - grep.
 TS_FORCE - ok.
-UTS_FORCEFLAG - ok.
-UTS_HELPFLAG - ok.
-UTS_LOGDIR - export?
-UTS_NOAUTOARGS - ok.
-UTS_NOCOLOR - ok.
-UTS_PVARDIR export.
-UTS_SCRIPTDIR - ??? review.
-UTS_SCRIPTTPL - .tpl ?
-UTS_SUNIT - .sht?
-UTS_VERBOSE - internal only.
-UTS_VERBOSEFLAG - ok? or export?
+UTILS_FORCEFLAG - ok.
+UTILS_HELPFLAG - ok.
+UTILS_LOGDIR - export?
+UTILS_NOAUTOARGS - ok.
+UTILS_NOCOLOR - ok.
+UTILS_PVARDIR export.
+UTILS_SCRIPTDIR - ??? review.
+UTILS_SCRIPTTPL - .tpl ?
+UTILS_SUNIT - .sht?
+UTILS_VERBOSE - internal only.
+UTILS_VERBOSEFLAG - ok? or export?
 
 GLOBAL RENAME LIST:
 -	utsPrivate =>
 -	verbose => utsVerbose() --get --set - 
--	UTS_VERBOSE => private.
+-	UTILS_VERBOSE => private.
 -	check other private names.
 -	utils_globals => uts_devtools.
 
@@ -421,7 +421,7 @@ o UTILS_GIT?
 o Sort out docco -bash script.
 
 *******************
-UTS_SCRIPTROOT -- helper functions use. Not good, I think as not really a UTS_ thing...
+UTILS_SCRIPTROOT -- helper functions use. Not good, I think as not really a UTILS_ thing...
 *******************
 
 NEW-
