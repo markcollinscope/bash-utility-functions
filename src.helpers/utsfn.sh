@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source uts.all.shi
+source uts.shi
 
 utsfn_main()
 {
