@@ -102,7 +102,6 @@ evalvb() # <command>
 	eval $CMD
 }
 
-
 # do autoparsing of verbose flag.
 if ! $UTILS_NOAUTOARGS; then
 	eval $(boolopt $UTILS_VERBOSEFLAG USE_VERBOSE_OUTPUT "$@");

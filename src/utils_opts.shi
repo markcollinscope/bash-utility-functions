@@ -186,24 +186,23 @@ binopt() # [ --rem <documentation...> ] <flag> <bash var> <default-value> <value
 
 	local FLAG VAR DEFAULT_VALUE OTHER_VALUE;
 
-	setvar FLAG "$1"
-	setvar VAR "$2"
+	local FLAG="$1"
+	local VAR="$2"
 
-	setvar DEFAULT_VALUE "$3"
-	setvar OTHER_VALUE "$4"
+	local DEFAULT_VALUE="$3"
+	local OTHER_VALUE="$4"
 
 	shift 4;
 
 	local ARGS=
 	local FLAGSPLIT=$(_splitFlag $FLAG);
 
-
 	if null ${!VAR}; then
 		EVAL="$VAR=\"$DEFAULT_VALUE\""
 	fi
 
 	while ! null "$1"; do
-		if _ismatch "$1" $FLAGSPLIT; then
+		if _ismatch "$1" $FLAGSPLIT && ! null $VAR; then
 			EVAL="$VAR=\"$OTHER_VALUE\""
 		else
 			ARGS="$ARGS \"$1\"";
@@ -215,7 +214,7 @@ binopt() # [ --rem <documentation...> ] <flag> <bash var> <default-value> <value
 }
 
 
-boolopt() # [ --rem <documentation...> ] <flag> <bash var> "$@"
+boolopt() # [ --rem <documentation...> ] <flag> <bash-var> "$@"
 # called in the form:
 # eval $(boolopt --rem <documentation...> -a AVARIABLE "$@")
 # where: 	<flag> (-a) is the flag to be processed on the including script.
