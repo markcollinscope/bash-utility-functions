@@ -13,7 +13,7 @@ if ! alreadyIncluded UTILS_FUZ; then
 . utils_git.shi
 
 # for self test purposes.
-. uts.unit.shi
+. uts.bashunit.shi
 
 _boolfrom() # fn <args>
 # return 'true' or 'false' - i.e. valid bash 'bool' values.
