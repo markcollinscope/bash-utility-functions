@@ -12,9 +12,6 @@ if ! alreadyIncluded UTILS_FUZ; then
 . utils_vb.shi
 . utils_git.shi
 
-# for self test purposes.
-. uts.bashunit.shi
-
 _boolfrom() # fn <args>
 # return 'true' or 'false' - i.e. valid bash 'bool' values.
 # depending on the return code (0/non-0) of call to: fn <args>.
@@ -125,7 +122,7 @@ fuzfind() # # <partial-file-name> # see full fn body = multiple opts.
 	eval $(bopt --suf "$@")
 	
 	# 'str' exactly - no wildcards in search.
-	eval $(bopt -x:--exact 	"$@")
+	eval $(bopt -x,--exact 	"$@")
 
 	local str=$(arg $1);
 	local dir=$(fuzdir $(optbfwd --git --home --wd) $(optvfwd --dir))
@@ -175,6 +172,9 @@ fuzfind() # # <partial-file-name> # see full fn body = multiple opts.
 		return $retval;
 	)
 }
+
+# self test - unit test include.
+. uts.bashunit.shi
 
 # self test.
 tst.active && {
