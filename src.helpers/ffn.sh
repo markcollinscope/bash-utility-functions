@@ -20,6 +20,7 @@ END_USAGE
 . utils.shi
 
 chkvar MY_SCR_ROOT
+vbvar MY_SCR_ROOT
 
 Usage()
 {
@@ -37,7 +38,6 @@ LONGFORMAT=false;
 PRINTFILENAMEONLY=false;
 FILEPATTERN=""
 
-
 FNEND='()'
 
 eval $(boolopt --rem "match any function (do not give a function name)" -a ANYFUNCTION "$@")
@@ -47,7 +47,28 @@ eval $(valopt  --rem "specify files (by glob pattern) to match (ls style - e.g. 
 eval $(boolopt --rem "use shorter output format (prints fn upto open brace)" -s SHORTFORMAT "$@")
 eval $(boolopt --rem "use longer detailed output format (full listing)" -l LONGFORMAT "$@")
 eval $(boolopt --rem "use bash native (set) output format (full listing, after parsing by bash)" -d USEBASHNATIVE "$@")
+eval $(boolopt --rem "search uts utilities ares" -u USEUTS "$@")
 errifopt "$@";
+
+vbvar USEUTS
+
+declare -g STARTDIR=$MY_SCR_ROOT
+
+if $USEUTS; then 
+	STARTDIR=$MY_UTS_REPO; 
+fi
+
+fnpattern()
+{
+	local partfnname=$1;
+	chkvar partfnname;
+
+	local res="^[[:alpha:]_]*$partfnname[[:alnum:]_]*$FNEND";
+	if $USEUTS; then
+		res="^.*function[[:space:]]*[[:alpha:]_\.]*$partfnname[[:alnum:]_\.]*$FNEND"
+	fi
+	echo $res;
+}
 
 searchForMatch()
 {
@@ -63,7 +84,9 @@ searchForMatch()
 		FILEPATTERN="*$i $FILEPATTERN"
 	done
 
-	local FUNCT="^[[:alnum:]_]*$PARTFNNAME[[:alnum:]_]*$FNEND";
+	vbfnecho "FILEPATTERN: <$FILEPATTERN>"
+
+	local FUNCT=$(fnpattern $PARTFNNAME);
 	local MATCHES=$(xfindfilesgrep "$FUNCT" $FILEPATTERN)
 	local COUNT=$(count $MATCHES)
 
@@ -107,10 +130,13 @@ searchForMatch()
 
 main()
 {
+	cd $STARTDIR || { errecho "$STARTDIR not found"; exiterr 1; }
 
-	cd $UTILS_SCRIPTDIR
 	vbecho "Starting search in <$(pwd)>"
 	FILEPATTERN=${FILEPATTERN:-"$UTILS_BASHINCLUDE"}
+	vbfnecho
+	vbvar FILEPATTERN
+	vbfnecho "starting search... <$FILEPATTERN>"
 
 	if $ANYFUNCTION; then
 		searchForMatch "$FILEPATTERN"
