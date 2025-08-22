@@ -50,6 +50,7 @@ eval $(boolopt --rem "use bash native (set) output format (full listing, after p
 eval $(boolopt --rem "search uts utilities ares" -u USEUTS "$@")
 errifopt "$@";
 
+UTSUTS=true;
 vbvar USEUTS
 
 declare -g STARTDIR=$MY_SCR_ROOT
