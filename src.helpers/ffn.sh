@@ -1,5 +1,9 @@
 #!/bin/bash
 
+. utils.shi
+
+# DBG: uts access for functions. started to get somewhere TBD.
+
 ######
 USAGE=$(cat <<END_USAGE
 
@@ -17,7 +21,6 @@ END_USAGE
 )
 ######
 
-. utils.shi
 
 chkvar MY_SCR_ROOT
 vbvar MY_SCR_ROOT
@@ -36,28 +39,32 @@ EXACTMATCH=false;
 SHORTFORMAT=false;
 LONGFORMAT=false;
 PRINTFILENAMEONLY=false;
-FILEPATTERN=""
+FILE_EXT=""
 
 FNEND='()'
 
 eval $(boolopt --rem "match any function (do not give a function name)" -a ANYFUNCTION "$@")
 eval $(boolopt --rem "search for an exact match only" -x EXACTMATCH "$@")
 eval $(boolopt --rem "print matching file name only" -f PRINTFILENAMEONLY "$@")
-eval $(valopt  --rem "specify files (by glob pattern) to match (ls style - e.g. *.sh)" -m FILEPATTERN "$@")
+eval $(valopt  --rem "specify files (by glob pattern) to match (ls style - e.g. *.sh)" -m FILE_EXT "$@")
 eval $(boolopt --rem "use shorter output format (prints fn upto open brace)" -s SHORTFORMAT "$@")
 eval $(boolopt --rem "use longer detailed output format (full listing)" -l LONGFORMAT "$@")
 eval $(boolopt --rem "use bash native (set) output format (full listing, after parsing by bash)" -d USEBASHNATIVE "$@")
 eval $(boolopt --rem "search uts utilities ares" -u USEUTS "$@")
 errifopt "$@";
 
-UTSUTS=true;
+USEUTS=true;
 vbvar USEUTS
 
 declare -g STARTDIR=$MY_SCR_ROOT
 
 if $USEUTS; then 
 	STARTDIR=$MY_UTS_REPO; 
+	source uts.shi
+	source uts.rgx.shi
 fi
+
+vbvar STARTDIR
 
 fnpattern()
 {
@@ -79,16 +86,16 @@ searchForMatch()
 		setvar PARTFNNAME "$1"; shift;
 	fi
 
-	local FILEPATTERN=
+	local FILE_PATT=
 
 	for i in "$@"; do
-		FILEPATTERN="*$i $FILEPATTERN"
+		FILE_PATT="*$i $FILE_PATT"
 	done
 
-	vbfnecho "FILEPATTERN: <$FILEPATTERN>"
+	vbfnecho "FILE_PATT: <$FILE_PATT>"
 
 	local FUNCT=$(fnpattern $PARTFNNAME);
-	local MATCHES=$(xfindfilesgrep "$FUNCT" $FILEPATTERN)
+	local MATCHES=$(xfindfilesgrep "$FUNCT" $FILE_PATT)
 	local COUNT=$(count $MATCHES)
 
 	vbecho "MATCHES: <$MATCHES>"
@@ -104,7 +111,7 @@ searchForMatch()
 
 	vbvar MATCHES
 	vbvar COUNT 
-	vbvar FILEPATTERN
+	vbvar FILE_PATT
 	vbvar FUNCT
 
 	for match in $MATCHES; do
@@ -134,17 +141,17 @@ main()
 	cd $STARTDIR || { errecho "$STARTDIR not found"; exiterr 1; }
 
 	vbecho "Starting search in <$(pwd)>"
-	FILEPATTERN=${FILEPATTERN:-"$UTILS_BASHINCLUDE"}
+	FILE_EXT=${FILE_EXT:-".shi"}
 	vbfnecho
-	vbvar FILEPATTERN
-	vbfnecho "starting search... <$FILEPATTERN>"
+	vbvar FILE_EXT
+	vbfnecho "starting search... <$FILE_EXT>"
 
 	if $ANYFUNCTION; then
-		searchForMatch "$FILEPATTERN"
+		searchForMatch "$FILE_EXT"
 	else
 		if (( $# != 1 )); then Usage; fi
 		setvar PARTFN "$1"
-		searchForMatch "$PARTFN" "$FILEPATTERN"
+		searchForMatch "$PARTFN" "$FILE_EXT"
 	fi
 }
 
