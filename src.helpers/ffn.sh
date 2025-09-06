@@ -21,7 +21,6 @@ END_USAGE
 )
 ######
 
-
 chkvar MY_SCR_ROOT
 vbvar MY_SCR_ROOT
 
@@ -50,20 +49,9 @@ eval $(valopt  --rem "specify files (by glob pattern) to match (ls style - e.g. 
 eval $(boolopt --rem "use shorter output format (prints fn upto open brace)" -s SHORTFORMAT "$@")
 eval $(boolopt --rem "use longer detailed output format (full listing)" -l LONGFORMAT "$@")
 eval $(boolopt --rem "use bash native (set) output format (full listing, after parsing by bash)" -d USEBASHNATIVE "$@")
-eval $(boolopt --rem "search uts utilities ares" -u USEUTS "$@")
 errifopt "$@";
 
-USEUTS=true;
-vbvar USEUTS
-
 declare -g STARTDIR=$MY_SCR_ROOT
-
-if $USEUTS; then 
-	STARTDIR=$MY_UTS_REPO; 
-	source uts.shi
-	source uts.rgx.shi
-fi
-
 vbvar STARTDIR
 
 fnpattern()
@@ -72,9 +60,6 @@ fnpattern()
 	chkvar partfnname;
 
 	local res="^[[:alpha:]_]*$partfnname[[:alnum:]_]*$FNEND";
-	if $USEUTS; then
-		res="^.*function[[:space:]]*[[:alpha:]_\.]*$partfnname[[:alnum:]_\.]*$FNEND"
-	fi
 	echo $res;
 }
 
