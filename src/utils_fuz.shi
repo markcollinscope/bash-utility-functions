@@ -174,237 +174,240 @@ fuzfind() # # <partial-file-name> # see full fn body = multiple opts.
 }
 
 # self test - unit test include.
-. uts.bashunit.shi
+if [[ -n $(which uts.bashunit.shi) ]]; then
 
-# self test.
-tst.active && {
-	tst vb "self testing initiated on <$0>";
+	. uts.bashunit.shi
 
-	# dirs used for testing.
-	readonly TST_GIT=/tmp/fuzfind_git_root;
-	readonly TST_GIT_AAA=$TST_GIT/a/a/a;
-	readonly TST_GIT_AAB=$TST_GIT/a/a/b;
-	readonly TST_ALL="$TST_GIT $TST_GIT_AAA $TST_GIT_AAB";
+	# self test.
+	tst.active && {
+		tst vb "self testing initiated on <$0>";
 
-	tst.init() { rm -rf $TST_GIT; }
+		# dirs used for testing.
+		readonly TST_GIT=/tmp/fuzfind_git_root;
+		readonly TST_GIT_AAA=$TST_GIT/a/a/a;
+		readonly TST_GIT_AAB=$TST_GIT/a/a/b;
+		readonly TST_ALL="$TST_GIT $TST_GIT_AAA $TST_GIT_AAB";
 
-	# no output from pushd, popd, thanks!
-	_pushd() 	{ no ne pushd "$@"; }
-	_popd()		{ no ne popd; }
+		tst.init() { rm -rf $TST_GIT; }
 
-	# create dirs in which to put files as per test matrix below.
-	# called automatically - start of each test.
-	tst.setup()
-	{
-		for i in $TST_ALL; do
-			mkdir -p $i;
-		done
+		# no output from pushd, popd, thanks!
+		_pushd() 	{ no ne pushd "$@"; }
+		_popd()		{ no ne popd; }
 
-		_pushd $TST_GIT;
-		no ne git init;
-		_popd;
+		# create dirs in which to put files as per test matrix below.
+		# called automatically - start of each test.
+		tst.setup()
+		{
+			for i in $TST_ALL; do
+				mkdir -p $i;
+			done
 
-		# see below.
-		_files_setup;
-	}
+			_pushd $TST_GIT;
+			no ne git init;
+			_popd;
 
-	tst.teardown() { tst.init; }
-	
-	### test - fuzdir fn and option variants.
-	function test.fuzdir.git()
-	{
-		# test git parts of fuzdir fn.
-		local out=undefined;
-		local xout=different_undefined;
+			# see below.
+			_files_setup;
+		}
+
+		tst.teardown() { tst.init; }
 		
-		_pushd $TST_GIT_AAB;
-		
-		# 1 - explicit request for --git (root) dir.
-		out=$(fuzdir --git);
-		xout=$TST_GIT;
-		tst assert --same "$out" "$xout";
+		### test - fuzdir fn and option variants.
+		function test.fuzdir.git()
+		{
+			# test git parts of fuzdir fn.
+			local out=undefined;
+			local xout=different_undefined;
+			
+			_pushd $TST_GIT_AAB;
+			
+			# 1 - explicit request for --git (root) dir.
+			out=$(fuzdir --git);
+			xout=$TST_GIT;
+			tst assert --same "$out" "$xout";
 
-		# 2 - implicit request for git (root) dir.
-		out=$(fuzdir);
-		xout=$TST_GIT;
-		tst assert --same "$out" "$xout";
+			# 2 - implicit request for git (root) dir.
+			out=$(fuzdir);
+			xout=$TST_GIT;
+			tst assert --same "$out" "$xout";
 
-		_popd
-		# end git.
+			_popd
+			# end git.
+		}
+
+		function test.fuzdir.home()
+		{
+			# test home dir;
+			local out=$(fuzdir --home);
+			local xout=$HOME;
+			tst assert --same "$out" "$xout";
+		}
+
+		function test.fuzdir.wd()
+		{
+			# test current dir.
+			_pushd $HOME
+
+			# 1 - explicit use of current dir - using $HOME as not a git dir.
+			local out=$(fuzdir --wd);
+			local xout=$(pwd);
+			tst assert --same "$out" "$xout";
+
+			# 2 - implicit request for current dir.	
+			local out=$(fuzdir);
+			local xout=$(pwd);
+			tst assert --same "$out" "$xout";
+
+			_popd
+			# end current dir.
+		}
+
+		function test.fuzdir.dir()
+		{
+			# test specific named dir
+			local out=$(fuzdir --dir $TST_GIT);
+			local xout=$TST_GIT;
+
+			tst assert --same "$out" "$xout";
+		}
+
+		### test - fuzfind fn and option variants.
+
+		### test file match matrix
+		#
+		# Matrix Below.
+		# - 1st - number of matches and flags used for matching.
+		# - 2nd - file(s) used to match.
+		# - lhs - option used in testing to search for files.
+		# - rhs	- option used to select search root.
+		#
+		# Non Error Test Matrix 
+		#
+		# 			One (default)	Many (--many)	<= testing for this many matches.
+		#			one.file.one	manyf.<n>.suf	<= filenames used in testing.
+		#			
+		# --exact	 x								--dir	=> see: test.fuzfind.one
+		# --suf							x			--git	=> see: test.fuzfind.many
+		# --pre		 x								--wd	=> see: test.fuzfind.pre
+		# 
+		# --zerr = test for error on non matching file - not test directly here.
+		# default - test for one
+
+		_files_setup()
+		{
+			# see below for these fn defs.
+			_create_one;
+			_create_many;
+			_create_pre;
+		}
+
+		# file for one match.
+		readonly F_ONE_NAME='one.something.one';
+		readonly F_ONE_PATH=$TST_GIT_AAA/$F_ONE_NAME;
+
+		_create_one()
+		{
+			touch $F_ONE_PATH;
+		}
+
+		function test.fuzfind.one()
+		{
+			local in=$F_ONE_NAME;
+			local xout=$F_ONE_PATH;
+
+			local out=$(fuzfind --dir $TST_GIT --exact $in)
+			tst assert --same "$out" "$xout";
+		}
+
+		declare -g NMANY=999999;
+		readonly COREMANY='manylikethis';
+
+		declare -g MANYFILES=undefined;
+
+		_create_many()
+		{
+			local suf='suf';
+			local core=$COREMANY;
+			local files="$TST_GIT_AAB/$core.1.$suf $TST_GIT_AAB/$core.2.$suf $TST_GIT_AAB/$core.3.$suf"
+
+			# tbd: investigate issue with 'sort' on $files.
+
+			MANYFILES=$files;
+			NMANY=$(count $files);
+
+			local dontmatch=$TST_GIT_AAA/this_will_not_match.$core.$suf;
+			touch $dontmatch;
+
+			for i in $files; do
+				touch $i;
+			done
+		}
+
+		function test.fuzfind.many()
+		{
+			_pushd $TST_GIT_AAA;
+
+			local in=$COREMANY;
+			local out=$(fuzfind --git --many --suf $COREMANY);
+			local xout="$MANYFILES";
+
+			tst assert --same "$out" "$xout";
+			_popd;
+		}
+
+		declare -g F_PRE_NAME='precorefilename';
+		declare -g F_PRE_DIR='/tmp';
+		declare -g F_PRE_PATH=undefined;
+
+		_create_pre()
+		{
+			local pre='pre';
+			local file=$pre.$F_PRE_NAME;
+			local pre_path=$F_PRE_DIR/$file;
+
+			touch $pre_path;
+
+			F_PRE_PATH=$pre_path;
+		}
+
+		function test.fuzfind.pre()
+		{
+			_pushd $F_PRE_DIR;
+
+			local in=$F_PRE_NAME;
+			local out=$(ne fuzfind $in --pre);
+			local xout=$F_PRE_PATH;
+
+			tst assert --same "$out" "$xout";
+			_popd;
+		}
+
+		function test.fuzfind.manyfiles() 
+		{ 
+			local basedir=/tmp/anydir;
+			local d1=$basedir/dir1;
+			local d2=$basedir/dir2;
+			local f=filename;
+
+			rm -rf $basedir;
+			mkdir -p $d1 $d2; 
+			
+			for i in $(seq 1 50); do
+				touch $d1/$f$i;
+				touch $d2/$f$i;
+			done
+			local xout=100;
+			
+			_pushd $basedir; 
+			local files=$(fuzfind --many $f);
+			local count=$(count $files);
+			_popd
+			
+			tst.assert --same $count $xout; 
+		}
+
+		tst run
 	}
 
-	function test.fuzdir.home()
-	{
-		# test home dir;
-		local out=$(fuzdir --home);
-		local xout=$HOME;
-		tst assert --same "$out" "$xout";
-	}
-
-	function test.fuzdir.wd()
-	{
-		# test current dir.
-		_pushd $HOME
-
-		# 1 - explicit use of current dir - using $HOME as not a git dir.
-		local out=$(fuzdir --wd);
-		local xout=$(pwd);
-		tst assert --same "$out" "$xout";
-
-		# 2 - implicit request for current dir.	
-		local out=$(fuzdir);
-		local xout=$(pwd);
-		tst assert --same "$out" "$xout";
-
-		_popd
-		# end current dir.
-	}
-
-	function test.fuzdir.dir()
-	{
-		# test specific named dir
-		local out=$(fuzdir --dir $TST_GIT);
-		local xout=$TST_GIT;
-
-		tst assert --same "$out" "$xout";
-	}
-
-	### test - fuzfind fn and option variants.
-
-	### test file match matrix
-	#
-	# Matrix Below.
-	# - 1st - number of matches and flags used for matching.
-	# - 2nd - file(s) used to match.
-	# - lhs - option used in testing to search for files.
-	# - rhs	- option used to select search root.
-	#
-	# Non Error Test Matrix 
-	#
-	# 			One (default)	Many (--many)	<= testing for this many matches.
-	#			one.file.one	manyf.<n>.suf	<= filenames used in testing.
-	#			
-	# --exact	 x								--dir	=> see: test.fuzfind.one
-	# --suf							x			--git	=> see: test.fuzfind.many
-	# --pre		 x								--wd	=> see: test.fuzfind.pre
-	# 
-	# --zerr = test for error on non matching file - not test directly here.
-	# default - test for one
-
-	_files_setup()
-	{
-		# see below for these fn defs.
-		_create_one;
-		_create_many;
-		_create_pre;
-	}
-
-	# file for one match.
-	readonly F_ONE_NAME='one.something.one';
-	readonly F_ONE_PATH=$TST_GIT_AAA/$F_ONE_NAME;
-
-	_create_one()
-	{
-		touch $F_ONE_PATH;
-	}
-
-	function test.fuzfind.one()
-	{
-		local in=$F_ONE_NAME;
-		local xout=$F_ONE_PATH;
-
-		local out=$(fuzfind --dir $TST_GIT --exact $in)
-		tst assert --same "$out" "$xout";
-	}
-
-	declare -g NMANY=999999;
-	readonly COREMANY='manylikethis';
-
-	declare -g MANYFILES=undefined;
-
-	_create_many()
-	{
-		local suf='suf';
-		local core=$COREMANY;
-		local files="$TST_GIT_AAB/$core.1.$suf $TST_GIT_AAB/$core.2.$suf $TST_GIT_AAB/$core.3.$suf"
-
-		# tbd: investigate issue with 'sort' on $files.
-
-		MANYFILES=$files;
-		NMANY=$(count $files);
-
-		local dontmatch=$TST_GIT_AAA/this_will_not_match.$core.$suf;
-		touch $dontmatch;
-
-		for i in $files; do
-			touch $i;
-		done
-	}
-
-	function test.fuzfind.many()
-	{
-		_pushd $TST_GIT_AAA;
-
-		local in=$COREMANY;
-		local out=$(fuzfind --git --many --suf $COREMANY);
-		local xout="$MANYFILES";
-
-		tst assert --same "$out" "$xout";
-		_popd;
-	}
-
-	declare -g F_PRE_NAME='precorefilename';
-	declare -g F_PRE_DIR='/tmp';
-	declare -g F_PRE_PATH=undefined;
-
-	_create_pre()
-	{
-		local pre='pre';
-		local file=$pre.$F_PRE_NAME;
-		local pre_path=$F_PRE_DIR/$file;
-
-		touch $pre_path;
-
-		F_PRE_PATH=$pre_path;
-	}
-
-	function test.fuzfind.pre()
-	{
-		_pushd $F_PRE_DIR;
-
-		local in=$F_PRE_NAME;
-		local out=$(ne fuzfind $in --pre);
-		local xout=$F_PRE_PATH;
-
-		tst assert --same "$out" "$xout";
-		_popd;
-	}
-
-	function test.fuzfind.manyfiles() 
-	{ 
-		local basedir=/tmp/anydir;
-		local d1=$basedir/dir1;
-		local d2=$basedir/dir2;
-		local f=filename;
-
-		rm -rf $basedir;
-		mkdir -p $d1 $d2; 
-		
-		for i in $(seq 1 50); do
-			touch $d1/$f$i;
-			touch $d2/$f$i;
-		done
-		local xout=100;
-		
-		_pushd $basedir; 
-		local files=$(fuzfind --many $f);
-		local count=$(count $files);
-		_popd
-		
-		tst.assert --same $count $xout; 
-	}
-
-	tst run
-}
-
+	fi
 fi
