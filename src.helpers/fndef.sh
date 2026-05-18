@@ -1,8 +1,5 @@
 #/bin/bash
 
-. uts.shi
-. uts.rx.shi
-###
 . utils.shi
 
 USAGE=$(cat <<USG
