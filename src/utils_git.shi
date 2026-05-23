@@ -171,5 +171,38 @@ gitcandpfn() # <message>
 	gitCommitAndPush "$@"; 
 }
 
+
+gitdivergent()
+{
+    git for-each-ref --format='%(refname:short) %(upstream:short)' refs/heads |
+    while read -r br up; do
+        [ -n "$up" ] || continue
+        counts=$(git rev-list --left-right --count "$br...$up")
+        ahead=${counts%%[[:space:]]*}
+        behind=${counts##*[[:space:]]}
+
+        if [ "$ahead" -gt 0 ] && [ "$behind" -gt 0 ]; then
+            printf 'DIVERGED %s: %s ahead, %s behind upstream %s\n' \
+                "$br" "$ahead" "$behind" "$up"
+        fi
+    done
+}
+
+gitstale()
+{
+    git for-each-ref --format='%(refname:short) %(committerdate:unix)' refs/heads |
+    while read -r br ts; do
+        case "$br" in
+            main|master|develop|baseline) continue ;;
+        esac
+
+        age_days=$(( ( $(date +%s) - ts ) / 86400 ))
+
+        if [ "$age_days" -gt 2 ]; then
+            printf 'STALE %s: %s days since last commit\n' "$br" "$age_days"
+        fi
+    done
+}
+
 ### END CONTENT
 fi
